@@ -6,24 +6,11 @@ public class User {
     private String email;
     private String password;
     private String role;
+    private String fullName;
     private Integer studentId;
     private Integer professorId;
     private Integer adminId;
-
-    public User() {
-    }
-
-    public User(int userId, String username, String email, String password, String role,
-                Integer studentId, Integer professorId, Integer adminId) {
-        this.userId = userId;
-        this.username = username;
-        this.email = email;
-        this.password = password;
-        this.role = role;
-        this.studentId = studentId;
-        this.professorId = professorId;
-        this.adminId = adminId;
-    }
+    private Integer staffId;
 
     public int getUserId() {
         return userId;
@@ -65,6 +52,14 @@ public class User {
         this.role = role;
     }
 
+    public String getFullName() {
+        return fullName;
+    }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
+    }
+
     public Integer getStudentId() {
         return studentId;
     }
@@ -87,5 +82,17 @@ public class User {
 
     public void setAdminId(Integer adminId) {
         this.adminId = adminId;
+    }
+
+    public Integer getStaffId() {
+        return staffId;
+    }
+
+    public void setStaffId(Integer staffId) {
+        this.staffId = staffId;
+    }
+
+    public String getDisplayName() {
+        return fullName == null || fullName.isBlank() ? username : fullName;
     }
 }

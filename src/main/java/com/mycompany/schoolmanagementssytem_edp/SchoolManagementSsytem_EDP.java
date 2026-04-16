@@ -1,22 +1,15 @@
 package com.mycompany.schoolmanagementssytem_edp;
 
-import java.sql.Connection;
+import javax.swing.SwingUtilities;
 
 public class SchoolManagementSsytem_EDP {
 
     public static void main(String[] args) {
-        
-        // 🔹 Connect to database
-        Connection conn = DBConnection.connect();
-        
-        if (conn != null) {
-            System.out.println("Database Connected!");
-        } else {
-            System.out.println("Connection Failed!");
-        }
+        AppTheme.install();
 
-        // 🔹 Open Admin GUI
-        Admin admin = new Admin();
-        admin.setVisible(true);
+        SwingUtilities.invokeLater(() -> {
+            Admin landingPage = new Admin();
+            landingPage.setVisible(true);
+        });
     }
 }

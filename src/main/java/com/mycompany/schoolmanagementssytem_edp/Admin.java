@@ -1,126 +1,124 @@
 package com.mycompany.schoolmanagementssytem_edp;
 
-import java.awt.Color;
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.KeyStroke;
+import javax.swing.SwingConstants;
+import javax.swing.border.EmptyBorder;
 
-public class Admin extends javax.swing.JFrame {
+public class Admin extends JFrame {
 
     public Admin() {
-        initComponents();
+        super("BulSU School Management System");
+        buildUi();
     }
 
-    @SuppressWarnings("unchecked")
-    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
-    private void initComponents() {
-
-        jPanel1 = new javax.swing.JPanel();
-        jLabel2 = new javax.swing.JLabel();
-        jLabel1 = new javax.swing.JLabel();
-        lgsBtn = new javax.swing.JButton();
-
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("Student Management System");
-        setResizable(false);
-
-        jPanel1.setBackground(new java.awt.Color(252, 252, 252));
-
-        jLabel2.setFont(new java.awt.Font("Segoe UI", 0, 22)); // NOI18N
-        jLabel2.setForeground(new java.awt.Color(100, 116, 139));
-        jLabel2.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel2.setText("Welcome to the");
-
-        jLabel1.setFont(new java.awt.Font("Segoe UI", 1, 42)); // NOI18N
-        jLabel1.setForeground(new java.awt.Color(30, 41, 59));
-        jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel1.setText("Student Management System");
-
-        lgsBtn.setBackground(new java.awt.Color(37, 99, 235));
-        lgsBtn.setFont(new java.awt.Font("Segoe UI", 1, 16)); // NOI18N
-        lgsBtn.setForeground(new java.awt.Color(255, 255, 255));
-        lgsBtn.setText("Let's Get Started \u2192");
-        lgsBtn.setBorderPainted(false);
-        lgsBtn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        lgsBtn.setFocusPainted(false);
-        lgsBtn.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                lgsBtnMouseClicked(evt);
-            }
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                lgsBtnMouseEntered(evt);
-            }
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                lgsBtnMouseExited(evt);
-            }
-        });
-
-        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
-        jPanel1.setLayout(jPanel1Layout);
-        jPanel1Layout.setHorizontalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addContainerGap(120, Short.MAX_VALUE)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jLabel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addContainerGap(120, Short.MAX_VALUE))
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addContainerGap(350, Short.MAX_VALUE)
-                .addComponent(lgsBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 250, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(350, Short.MAX_VALUE))
-        );
-        jPanel1Layout.setVerticalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(160, 160, 160)
-                .addComponent(jLabel2)
-                .addGap(5, 5, 5)
-                .addComponent(jLabel1)
-                .addGap(50, 50, 50)
-                .addComponent(lgsBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(200, Short.MAX_VALUE))
-        );
-
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
-        getContentPane().setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-        );
-        layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-        );
-
-        pack();
+    private void buildUi() {
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setMinimumSize(new Dimension(1100, 700));
+        setSize(1280, 820);
         setLocationRelativeTo(null);
-    }// </editor-fold>//GEN-END:initComponents
 
-    private void lgsBtnMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_lgsBtnMouseClicked
-        SignIn sign = new SignIn();
-        sign.setVisible(true);
-        this.dispose(); 
-    }//GEN-LAST:event_lgsBtnMouseClicked
+        JPanel root = AppChrome.createRootFrame(this);
+        setContentPane(root);
 
-    private void lgsBtnMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_lgsBtnMouseEntered
-        lgsBtn.setBackground(new Color(29, 78, 216)); 
-    }//GEN-LAST:event_lgsBtnMouseEntered
+        root.add(
+                AppChrome.createBrandHeader(
+                        "Smart campus access for students, faculty, staff, and administrators",
+                        () -> AppNavigator.openLanding(this)
+                ),
+                BorderLayout.NORTH
+        );
 
-    private void lgsBtnMouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_lgsBtnMouseExited
-        lgsBtn.setBackground(new Color(37, 99, 235)); 
-    }//GEN-LAST:event_lgsBtnMouseExited
+        JPanel center = new JPanel(new GridBagLayout());
+        center.setOpaque(false);
+        root.add(center, BorderLayout.CENTER);
 
-    public static void main(String args[]) {
-        try {
-            javax.swing.UIManager.setLookAndFeel(new com.formdev.flatlaf.FlatLightLaf());
-        } catch (Exception ex) {
-            System.err.println("Failed to initialize FlatLaf.");
-        }
-        java.awt.EventQueue.invokeLater(() -> new Admin().setVisible(true));
+        JPanel heroCard = AppTheme.createCardPanel();
+        heroCard.setLayout(new GridBagLayout());
+        heroCard.setPreferredSize(new Dimension(820, 470));
+        heroCard.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(AppTheme.BORDER, 1),
+                new EmptyBorder(48, 50, 48, 50)
+        ));
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.insets = new Insets(0, 0, 12, 0);
+        gbc.anchor = GridBagConstraints.CENTER;
+
+        JLabel badgeLabel = new JLabel("BulSU Sarmiento Campus Digital Portal");
+        badgeLabel.setFont(AppTheme.bodyBoldFont(14));
+        badgeLabel.setOpaque(true);
+        badgeLabel.setBackground(AppTheme.PRIMARY_SOFT);
+        badgeLabel.setForeground(AppTheme.PRIMARY_ACTIVE);
+        badgeLabel.setBorder(new EmptyBorder(10, 16, 10, 16));
+        heroCard.add(badgeLabel, gbc);
+
+        gbc.gridy++;
+        gbc.insets = new Insets(18, 0, 10, 0);
+        JLabel subtitleLabel = new JLabel("Welcome to the");
+        subtitleLabel.setFont(AppTheme.bodyFont(24));
+        subtitleLabel.setForeground(AppTheme.TEXT_MUTED);
+        heroCard.add(subtitleLabel, gbc);
+
+        gbc.gridy++;
+        gbc.insets = new Insets(0, 0, 26, 0);
+        JLabel titleLabel = new JLabel("School Management System");
+        titleLabel.setFont(AppTheme.displayFont(44));
+        titleLabel.setForeground(AppTheme.TEXT_PRIMARY);
+        heroCard.add(titleLabel, gbc);
+
+        gbc.gridy++;
+        gbc.insets = new Insets(0, 0, 18, 0);
+        JLabel descriptionLabel = new JLabel(
+                "<html><div style='text-align:center;'>"
+                + "Code-first Java Swing screens, role-based logins, and database-driven dashboards "
+                + "for Admin, Student, Professor, and Staff."
+                + "</div></html>"
+        );
+        descriptionLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        descriptionLabel.setFont(AppTheme.bodyFont(17));
+        descriptionLabel.setForeground(AppTheme.TEXT_SECONDARY);
+        heroCard.add(descriptionLabel, gbc);
+
+        gbc.gridy++;
+        gbc.insets = new Insets(12, 0, 0, 0);
+        JButton startButton = new JButton("Let's Get Started");
+        startButton.setPreferredSize(new Dimension(260, 52));
+        AppTheme.stylePrimaryButton(startButton);
+        startButton.addActionListener(this::openRoleSelection);
+        startButton.addMouseListener(AppTheme.clickPulse(startButton));
+        heroCard.add(startButton, gbc);
+
+        gbc.gridy++;
+        gbc.insets = new Insets(18, 0, 0, 0);
+        JLabel footerNote = new JLabel("Responsive Java Swing UI with XAMPP/MySQL-powered role dashboards.");
+        footerNote.setFont(AppTheme.bodyFont(14));
+        footerNote.setForeground(AppTheme.TEXT_MUTED);
+        heroCard.add(footerNote, gbc);
+
+        center.add(heroCard);
+        getRootPane().setDefaultButton(startButton);
+        getRootPane().registerKeyboardAction(
+                event -> openRoleSelection(null),
+                KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0),
+                JPanel.WHEN_IN_FOCUSED_WINDOW
+        );
     }
 
-    // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JLabel jLabel1;
-    private javax.swing.JLabel jLabel2;
-    private javax.swing.JPanel jPanel1;
-    private javax.swing.JButton lgsBtn;
-    // End of variables declaration//GEN-END:variables
+    private void openRoleSelection(ActionEvent event) {
+        AppNavigator.openRoleSelection(this);
+    }
 }
