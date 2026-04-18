@@ -13,7 +13,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.KeyStroke;
 
-public class SignIn extends JFrame {
+public class SignIn extends JFrame implements ThemeRefreshable {
 
     public SignIn() {
         super("Choose Your Role");
@@ -21,10 +21,13 @@ public class SignIn extends JFrame {
     }
 
     private void buildUi() {
+        getContentPane().removeAll();
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setMinimumSize(new Dimension(1000, 680));
-        setSize(1180, 760);
-        setLocationRelativeTo(null);
+        if (getWidth() <= 1 || getHeight() <= 1) {
+            setSize(1180, 760);
+            setLocationRelativeTo(null);
+        }
 
         JPanel root = AppChrome.createRootFrame(this);
         setContentPane(root);
@@ -32,7 +35,7 @@ public class SignIn extends JFrame {
         root.add(
                 AppChrome.createBrandHeader(
                         "Choose the portal role that matches your account",
-                        () -> AppNavigator.openRoleSelection(this)
+                        () -> AppNavigator.refreshCurrentFrame(this)
                 ),
                 BorderLayout.NORTH
         );
@@ -87,6 +90,8 @@ public class SignIn extends JFrame {
                 KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
                 JPanel.WHEN_IN_FOCUSED_WINDOW
         );
+        revalidate();
+        repaint();
     }
 
     private void addRoleButton(JPanel card, GridBagConstraints gbc, int row, Role role) {
@@ -98,5 +103,10 @@ public class SignIn extends JFrame {
         gbc.gridy = row;
         gbc.insets = new Insets(10, 0, 0, 0);
         card.add(button, gbc);
+    }
+
+    @Override
+    public void refreshTheme() {
+        AppTheme.refreshFrame(this, this::buildUi);
     }
 }

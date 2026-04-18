@@ -12,25 +12,28 @@ import javax.swing.border.EmptyBorder;
 
 class GradeFormPanel extends JPanel {
 
-    private final JTextField prelimField = new JTextField(12);
-    private final JTextField midtermField = new JTextField(12);
-    private final JTextField finalsField = new JTextField(12);
-    private final JTextField finalGradeField = new JTextField(12);
+    private final JTextField midtermPerformanceField = new JTextField(10);
+    private final JTextField midtermAttendanceField = new JTextField(10);
+    private final JTextField midtermWrittenWorksField = new JTextField(10);
+    private final JTextField midtermExamField = new JTextField(10);
+    private final JTextField finalsPerformanceField = new JTextField(10);
+    private final JTextField finalsAttendanceField = new JTextField(10);
+    private final JTextField finalsWrittenWorksField = new JTextField(10);
+    private final JTextField finalsExamField = new JTextField(10);
 
-    GradeFormPanel(BigDecimal prelim, BigDecimal midterm, BigDecimal finals, BigDecimal finalGrade) {
+    GradeFormPanel(SchoolRepository.GradeInput gradeInput) {
         setLayout(new GridBagLayout());
         setOpaque(false);
         setBorder(new EmptyBorder(8, 4, 8, 4));
 
-        AppTheme.styleTextField(prelimField);
-        AppTheme.styleTextField(midtermField);
-        AppTheme.styleTextField(finalsField);
-        AppTheme.styleTextField(finalGradeField);
-
-        prelimField.setText(decimalText(prelim));
-        midtermField.setText(decimalText(midterm));
-        finalsField.setText(decimalText(finals));
-        finalGradeField.setText(decimalText(finalGrade));
+        styleField(midtermPerformanceField, gradeInput.midtermPerformance());
+        styleField(midtermAttendanceField, gradeInput.midtermAttendance());
+        styleField(midtermWrittenWorksField, gradeInput.midtermWrittenWorks());
+        styleField(midtermExamField, gradeInput.midtermExam());
+        styleField(finalsPerformanceField, gradeInput.finalsPerformance());
+        styleField(finalsAttendanceField, gradeInput.finalsAttendance());
+        styleField(finalsWrittenWorksField, gradeInput.finalsWrittenWorks());
+        styleField(finalsExamField, gradeInput.finalsExam());
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
@@ -40,10 +43,31 @@ class GradeFormPanel extends JPanel {
         gbc.weightx = 1.0;
         gbc.insets = new Insets(0, 0, 6, 0);
 
-        addField("Prelim", prelimField, gbc);
-        addField("Midterm", midtermField, gbc);
-        addField("Finals", finalsField, gbc);
-        addField("Final Grade", finalGradeField, gbc);
+        addSectionLabel("Midterm Components", gbc);
+        addField("Performance (40%)", midtermPerformanceField, gbc);
+        addField("Attendance (10%)", midtermAttendanceField, gbc);
+        addField("Written Works (20%)", midtermWrittenWorksField, gbc);
+        addField("Exam (30%)", midtermExamField, gbc);
+
+        addSectionLabel("Finals Components", gbc);
+        addField("Performance (40%)", finalsPerformanceField, gbc);
+        addField("Attendance (10%)", finalsAttendanceField, gbc);
+        addField("Written Works (20%)", finalsWrittenWorksField, gbc);
+        addField("Exam (30%)", finalsExamField, gbc);
+    }
+
+    private void styleField(JTextField field, BigDecimal value) {
+        AppTheme.styleTextField(field);
+        field.setText(decimalText(value));
+    }
+
+    private void addSectionLabel(String text, GridBagConstraints gbc) {
+        JLabel label = new JLabel(text);
+        label.setFont(AppTheme.headingFont(15));
+        label.setForeground(AppTheme.PRIMARY_ACTIVE);
+        add(label, gbc);
+        gbc.gridy++;
+        gbc.insets = new Insets(0, 0, 6, 0);
     }
 
     private void addField(String labelText, Component field, GridBagConstraints gbc) {
@@ -60,26 +84,27 @@ class GradeFormPanel extends JPanel {
     }
 
     SchoolRepository.GradeInput buildGradeInput() {
-        BigDecimal prelim = parseGrade(prelimField.getText().trim(), "Prelim");
-        BigDecimal midterm = parseGrade(midtermField.getText().trim(), "Midterm");
-        BigDecimal finals = parseGrade(finalsField.getText().trim(), "Finals");
-        BigDecimal finalGrade = parseGrade(finalGradeField.getText().trim(), "Final Grade");
-        return new SchoolRepository.GradeInput(prelim, midterm, finals, finalGrade);
+        return new SchoolRepository.GradeInput(
+                parseGrade(midtermPerformanceField.getText().trim(), "Midterm Performance"),
+                parseGrade(midtermAttendanceField.getText().trim(), "Midterm Attendance"),
+                parseGrade(midtermWrittenWorksField.getText().trim(), "Midterm Written Works"),
+                parseGrade(midtermExamField.getText().trim(), "Midterm Exam"),
+                parseGrade(finalsPerformanceField.getText().trim(), "Finals Performance"),
+                parseGrade(finalsAttendanceField.getText().trim(), "Finals Attendance"),
+                parseGrade(finalsWrittenWorksField.getText().trim(), "Finals Written Works"),
+                parseGrade(finalsExamField.getText().trim(), "Finals Exam"),
+                null,
+                null,
+                null,
+                null
+        );
     }
 
     private BigDecimal parseGrade(String text, String label) {
         if (text.isBlank()) {
             return null;
         }
-        try {
-            BigDecimal grade = new BigDecimal(text);
-            if (grade.compareTo(BigDecimal.ZERO) < 0 || grade.compareTo(BigDecimal.valueOf(100)) > 0) {
-                throw new IllegalArgumentException(label + " must be between 0 and 100.");
-            }
-            return grade;
-        } catch (NumberFormatException exception) {
-            throw new IllegalArgumentException(label + " must be numeric.");
-        }
+        return AcademicCalculator.parseScore(text, label);
     }
 
     private String decimalText(BigDecimal value) {

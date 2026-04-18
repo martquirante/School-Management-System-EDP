@@ -45,7 +45,7 @@ public class RoleDashboardFrame extends JFrame {
     private final User user;
     private final SchoolRepository repository;
     private final Map<String, JButton> navigationButtons = new LinkedHashMap<>();
-    private final JPanel metricsPanel = new JPanel(new GridLayout(1, 3, 16, 16));
+    private final JPanel metricsPanel = new JPanel(new GridLayout(1, 0, 16, 16));
     private final JLabel welcomeLabel = new JLabel();
     private final JLabel pageTitleLabel = new JLabel();
     private final JLabel pageSubtitleLabel = new JLabel();
@@ -421,6 +421,10 @@ public class RoleDashboardFrame extends JFrame {
             addPrimaryToolbarButton("Add Account", this::openCreateAccountDialog);
             addSecondaryToolbarButton("Edit Selected", this::openEditAccountDialog);
             addDangerToolbarButton("Delete", this::openDeleteAccountDialog);
+        } else if (role == Role.PROFESSOR && "My Classes".equalsIgnoreCase(currentSection)) {
+            addPrimaryToolbarButton("View Master List", this::openProfessorMasterListDialog);
+            addSecondaryToolbarButton("Export Excel", this::exportProfessorGradeTemplate);
+            addSecondaryToolbarButton("Import Excel", this::importProfessorGradeTemplate);
         } else if (role == Role.PROFESSOR && "Gradebook".equalsIgnoreCase(currentSection)) {
             addPrimaryToolbarButton("Post Grade", this::openGradeDialog);
         } else if (role == Role.STAFF && "Registrations".equalsIgnoreCase(currentSection)) {
@@ -433,7 +437,10 @@ public class RoleDashboardFrame extends JFrame {
             addPrimaryToolbarButton("Add Subject", this::openCreateSubjectDialog);
             addSecondaryToolbarButton("Edit Selected", this::openEditSubjectDialog);
             addDangerToolbarButton("Delete", this::openDeleteSubjectDialog);
+        } else if (role == Role.STUDENT && "My Grades".equalsIgnoreCase(currentSection)) {
+            addPrimaryToolbarButton("Download PDF", this::exportStudentGradesPdf);
         } else if (role == Role.STUDENT && "COR & Advising Slip".equalsIgnoreCase(currentSection)) {
+            addPrimaryToolbarButton("Download PDF", this::exportStudentCorPdf);
             addPrimaryToolbarButton("Download HTML", this::exportStudentDocument);
         }
 
@@ -547,12 +554,13 @@ public class RoleDashboardFrame extends JFrame {
             return;
         }
 
-        GradeFormPanel formPanel = new GradeFormPanel(
-                parseDecimal(selectedValue("Prelim")),
-                parseDecimal(selectedValue("Midterm")),
-                parseDecimal(selectedValue("Finals")),
-                parseDecimal(selectedValue("Final Grade"))
-        );
+        GradeFormPanel formPanel;
+        try {
+            formPanel = new GradeFormPanel(repository.findGradeInput(enrollmentId));
+        } catch (Exception exception) {
+            JOptionPane.showMessageDialog(this, "Unable to load the selected grade record.\n\n" + exception.getMessage(), "Load Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
         while (true) {
             int option = JOptionPane.showConfirmDialog(this, formPanel, "Post Grade", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
@@ -769,6 +777,130 @@ public class RoleDashboardFrame extends JFrame {
             JOptionPane.showMessageDialog(this, "Document saved to:\n" + outputPath, "Download Complete", JOptionPane.INFORMATION_MESSAGE);
         } catch (Exception exception) {
             JOptionPane.showMessageDialog(this, "Unable to export the document.\n\n" + exception.getMessage(), "Export Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void exportStudentCorPdf() {
+        exportStudentPdf("Save COR / Advising Slip PDF", user.getDisplayName().replaceAll("\\s+", "_") + "_COR.pdf", true);
+    }
+
+    private void exportStudentGradesPdf() {
+        exportStudentPdf("Save Report of Grades PDF", user.getDisplayName().replaceAll("\\s+", "_") + "_ROG.pdf", false);
+    }
+
+    private void exportStudentPdf(String dialogTitle, String suggestedFileName, boolean corDocument) {
+        try {
+            JFileChooser chooser = new JFileChooser();
+            chooser.setDialogTitle(dialogTitle);
+            chooser.setFileFilter(new FileNameExtensionFilter("PDF files", "pdf"));
+            chooser.setSelectedFile(new java.io.File(suggestedFileName));
+
+            if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
+                return;
+            }
+
+            Path outputPath = chooser.getSelectedFile().toPath();
+            if (!outputPath.toString().toLowerCase().endsWith(".pdf")) {
+                outputPath = Path.of(outputPath.toString() + ".pdf");
+            }
+
+            if (corDocument) {
+                repository.exportStudentCorPdf(user, outputPath);
+            } else {
+                repository.exportStudentGradesPdf(user, outputPath);
+            }
+
+            JOptionPane.showMessageDialog(this, "PDF saved to:\n" + outputPath, "Download Complete", JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception exception) {
+            JOptionPane.showMessageDialog(this, "Unable to export the PDF.\n\n" + exception.getMessage(), "Export Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void openProfessorMasterListDialog() {
+        Integer classId = selectedInteger("Class Id");
+        if (classId == null) {
+            JOptionPane.showMessageDialog(this, "Select a class row first.", "No Class Selected", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        try {
+            SchoolRepository.TableData masterList = repository.loadProfessorMasterList(user, classId);
+            DefaultTableModel model = new DefaultTableModel(masterList.rows().toArray(Object[][]::new), masterList.columns()) {
+                @Override
+                public boolean isCellEditable(int row, int column) {
+                    return false;
+                }
+            };
+            JTable table = new JTable(model);
+            table.setRowHeight(30);
+            AppTheme.styleTable(table);
+            JScrollPane scrollPane = new JScrollPane(table);
+            scrollPane.setPreferredSize(new Dimension(980, 360));
+
+            JPanel panel = new JPanel(new BorderLayout(0, 12));
+            panel.setOpaque(false);
+            JLabel title = new JLabel("Class Master List for Class " + classId);
+            title.setFont(AppTheme.headingFont(18));
+            title.setForeground(AppTheme.TEXT_PRIMARY);
+            panel.add(title, BorderLayout.NORTH);
+            panel.add(scrollPane, BorderLayout.CENTER);
+
+            JOptionPane.showMessageDialog(this, panel, "Master List", JOptionPane.PLAIN_MESSAGE);
+        } catch (Exception exception) {
+            JOptionPane.showMessageDialog(this, "Unable to load the selected class list.\n\n" + exception.getMessage(), "Master List Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void exportProfessorGradeTemplate() {
+        Integer classId = selectedInteger("Class Id");
+        if (classId == null) {
+            JOptionPane.showMessageDialog(this, "Select a class row first.", "No Class Selected", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        try {
+            JFileChooser chooser = new JFileChooser();
+            chooser.setDialogTitle("Export Grade Template");
+            chooser.setFileFilter(new FileNameExtensionFilter("Excel files", "xlsx"));
+            chooser.setSelectedFile(new java.io.File("class_" + classId + "_grade_template.xlsx"));
+
+            if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
+                return;
+            }
+
+            Path outputPath = chooser.getSelectedFile().toPath();
+            if (!outputPath.toString().toLowerCase().endsWith(".xlsx")) {
+                outputPath = Path.of(outputPath.toString() + ".xlsx");
+            }
+
+            repository.exportProfessorGradeTemplate(user, classId, outputPath);
+            JOptionPane.showMessageDialog(this, "Excel template saved to:\n" + outputPath, "Export Complete", JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception exception) {
+            JOptionPane.showMessageDialog(this, "Unable to export the Excel template.\n\n" + exception.getMessage(), "Export Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void importProfessorGradeTemplate() {
+        Integer classId = selectedInteger("Class Id");
+        if (classId == null) {
+            JOptionPane.showMessageDialog(this, "Select a class row first.", "No Class Selected", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        try {
+            JFileChooser chooser = new JFileChooser();
+            chooser.setDialogTitle("Import Encoded Grades");
+            chooser.setFileFilter(new FileNameExtensionFilter("Excel files", "xlsx"));
+
+            if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) {
+                return;
+            }
+
+            int importedCount = repository.importProfessorGradeTemplate(user, classId, chooser.getSelectedFile().toPath());
+            JOptionPane.showMessageDialog(this, importedCount + " grade row(s) imported and computed successfully.", "Import Complete", JOptionPane.INFORMATION_MESSAGE);
+            loadSection("Gradebook");
+        } catch (Exception exception) {
+            JOptionPane.showMessageDialog(this, "Unable to import the Excel file.\n\n" + exception.getMessage(), "Import Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 

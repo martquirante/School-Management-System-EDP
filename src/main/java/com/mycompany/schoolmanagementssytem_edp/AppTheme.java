@@ -6,6 +6,7 @@ import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Rectangle;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.AbstractButton;
@@ -13,10 +14,12 @@ import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
@@ -79,6 +82,24 @@ public final class AppTheme {
     public static void toggleMode() {
         darkMode = !darkMode;
         install();
+    }
+
+    public static void refreshFrame(JFrame frame, Runnable rebuildAction) {
+        Rectangle bounds = frame.getBounds();
+        int extendedState = frame.getExtendedState();
+        boolean visible = frame.isVisible();
+
+        install();
+        rebuildAction.run();
+
+        frame.setBounds(bounds);
+        frame.setExtendedState(extendedState);
+        SwingUtilities.updateComponentTreeUI(frame);
+        frame.revalidate();
+        frame.repaint();
+        if (visible) {
+            frame.setVisible(true);
+        }
     }
 
     public static void refreshPalette() {

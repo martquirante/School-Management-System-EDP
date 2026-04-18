@@ -20,7 +20,7 @@ import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 
-public class RoleLoginFrame extends JFrame {
+public class RoleLoginFrame extends JFrame implements ThemeRefreshable {
 
     private final Role role;
     private final SchoolRepository repository;
@@ -38,10 +38,13 @@ public class RoleLoginFrame extends JFrame {
     }
 
     private void buildUi() {
+        getContentPane().removeAll();
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setMinimumSize(new Dimension(1000, 680));
-        setSize(1180, 760);
-        setLocationRelativeTo(null);
+        if (getWidth() <= 1 || getHeight() <= 1) {
+            setSize(1180, 760);
+            setLocationRelativeTo(null);
+        }
 
         JPanel root = AppChrome.createRootFrame(this);
         setContentPane(root);
@@ -49,7 +52,7 @@ public class RoleLoginFrame extends JFrame {
         root.add(
                 AppChrome.createBrandHeader(
                         role.getDisplayName() + " access portal",
-                        () -> AppNavigator.openLogin(role, this)
+                        () -> AppNavigator.refreshCurrentFrame(this)
                 ),
                 BorderLayout.NORTH
         );
@@ -188,6 +191,8 @@ public class RoleLoginFrame extends JFrame {
                 KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
                 JPanel.WHEN_IN_FOCUSED_WINDOW
         );
+        revalidate();
+        repaint();
     }
 
     private void attemptLogin() {
@@ -310,5 +315,33 @@ public class RoleLoginFrame extends JFrame {
         passwordVisible = !passwordVisible;
         passwordField.setEchoChar(passwordVisible ? (char) 0 : passwordEchoChar);
         togglePasswordButton.setText(passwordVisible ? "Hide" : "Show");
+    }
+
+    @Override
+    public void refreshTheme() {
+        String username = usernameField == null ? "" : usernameField.getText();
+        String password = passwordField == null ? "" : new String(passwordField.getPassword());
+        String status = statusLabel == null ? " " : statusLabel.getText();
+        boolean visible = passwordVisible;
+
+        AppTheme.refreshFrame(this, this::buildUi);
+
+        usernameField.setText(username);
+        passwordField.setText(password);
+        statusLabel.setText(status);
+        if (visible != passwordVisible) {
+            passwordVisible = false;
+            passwordField.setEchoChar(passwordEchoChar);
+            togglePasswordVisibility(findTogglePasswordButton());
+        }
+    }
+
+    private JButton findTogglePasswordButton() {
+        for (java.awt.Component component : ((JPanel) passwordField.getParent()).getComponents()) {
+            if (component instanceof JButton button) {
+                return button;
+            }
+        }
+        throw new IllegalStateException("Password toggle button was not found.");
     }
 }

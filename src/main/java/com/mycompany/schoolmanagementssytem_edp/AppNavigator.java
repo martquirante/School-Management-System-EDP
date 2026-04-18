@@ -45,8 +45,25 @@ public final class AppNavigator {
         show(dashboard, currentFrame);
     }
 
+    public static void refreshCurrentFrame(JFrame currentFrame) {
+        if (currentFrame instanceof ThemeRefreshable refreshable) {
+            refreshable.refreshTheme();
+            return;
+        }
+
+        AppTheme.install();
+        javax.swing.SwingUtilities.updateComponentTreeUI(currentFrame);
+        currentFrame.revalidate();
+        currentFrame.repaint();
+    }
+
     private static void show(JFrame nextFrame, JFrame currentFrame) {
-        nextFrame.setLocationRelativeTo(currentFrame);
+        if (currentFrame != null) {
+            nextFrame.setBounds(currentFrame.getBounds());
+            nextFrame.setExtendedState(currentFrame.getExtendedState());
+        } else {
+            nextFrame.setLocationRelativeTo(null);
+        }
         nextFrame.setVisible(true);
 
         if (currentFrame != null) {

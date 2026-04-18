@@ -1,219 +1,276 @@
-START TRANSACTION;
+CREATE DATABASE IF NOT EXISTS school_management_system;
+USE school_management_system;
 
--- =========================================================
--- 1) REMOVE AMBIGUOUS YEAR LEVEL NAMING
--- =========================================================
+CREATE TABLE IF NOT EXISTS departments (
+    department_id INT AUTO_INCREMENT PRIMARY KEY,
+    department_name VARCHAR(120) NOT NULL,
+    office_location VARCHAR(160) NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'active',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
 
-ALTER TABLE students
-    CHANGE COLUMN year_level current_year_level INT NOT NULL;
+CREATE TABLE IF NOT EXISTS courses (
+    course_id INT AUTO_INCREMENT PRIMARY KEY,
+    course_code VARCHAR(40) NOT NULL,
+    course_name VARCHAR(160) NOT NULL,
+    department_id INT NULL,
+    total_units DECIMAL(6,2) NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'active',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
 
-ALTER TABLE sections
-    CHANGE COLUMN year_level section_year_level INT NOT NULL;
+CREATE TABLE IF NOT EXISTS school_years (
+    school_year_id INT AUTO_INCREMENT PRIMARY KEY,
+    school_year VARCHAR(40) NOT NULL,
+    is_current TINYINT(1) NOT NULL DEFAULT 1,
+    status VARCHAR(20) NOT NULL DEFAULT 'active',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
 
--- =========================================================
--- 2) ADD STATUS / TIMESTAMPS FOR BETTER TRACKING
--- =========================================================
+CREATE TABLE IF NOT EXISTS semesters (
+    semester_id INT AUTO_INCREMENT PRIMARY KEY,
+    semester_name VARCHAR(60) NOT NULL,
+    is_current TINYINT(1) NOT NULL DEFAULT 1,
+    status VARCHAR(20) NOT NULL DEFAULT 'active',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
 
-ALTER TABLE students
-    ADD COLUMN status ENUM('active','inactive','graduated','dropped','transferred') NOT NULL DEFAULT 'active' AFTER email,
-    ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+CREATE TABLE IF NOT EXISTS sections (
+    section_id INT AUTO_INCREMENT PRIMARY KEY,
+    section_name VARCHAR(80) NOT NULL,
+    course_id INT NULL,
+    year_level INT NULL,
+    section_year_level INT NOT NULL DEFAULT 1,
+    status VARCHAR(20) NOT NULL DEFAULT 'open',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
 
-ALTER TABLE professors
-    ADD COLUMN status ENUM('active','inactive','retired') NOT NULL DEFAULT 'active' AFTER email,
-    ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+CREATE TABLE IF NOT EXISTS students (
+    student_id INT AUTO_INCREMENT PRIMARY KEY,
+    student_number VARCHAR(40) NULL,
+    first_name VARCHAR(80) NOT NULL,
+    middle_name VARCHAR(80) NULL,
+    last_name VARCHAR(80) NOT NULL,
+    email VARCHAR(160) NULL,
+    course_id INT NULL,
+    year_level INT NULL,
+    contact_number VARCHAR(20) NULL,
+    section_id INT NULL,
+    current_year_level INT NOT NULL DEFAULT 1,
+    full_name VARCHAR(180) NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'active',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
 
-ALTER TABLE staffs
-    ADD COLUMN status ENUM('active','inactive') NOT NULL DEFAULT 'active' AFTER department_id,
-    ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+CREATE TABLE IF NOT EXISTS professors (
+    professor_id INT AUTO_INCREMENT PRIMARY KEY,
+    employee_number VARCHAR(40) NULL,
+    first_name VARCHAR(80) NOT NULL,
+    middle_name VARCHAR(80) NULL,
+    last_name VARCHAR(80) NOT NULL,
+    email VARCHAR(160) NULL,
+    department_id INT NULL,
+    contact_number VARCHAR(20) NULL,
+    full_name VARCHAR(180) NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'active',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
 
-ALTER TABLE admins
-    ADD COLUMN status ENUM('active','inactive') NOT NULL DEFAULT 'active' AFTER email,
-    ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+CREATE TABLE IF NOT EXISTS staffs (
+    staff_id INT AUTO_INCREMENT PRIMARY KEY,
+    employee_number VARCHAR(40) NULL,
+    first_name VARCHAR(80) NULL,
+    middle_name VARCHAR(80) NULL,
+    last_name VARCHAR(80) NULL,
+    email VARCHAR(160) NULL,
+    department_id INT NULL,
+    full_name VARCHAR(180) NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'active',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
 
-ALTER TABLE subjects
-    ADD COLUMN status ENUM('active','inactive') NOT NULL DEFAULT 'active' AFTER department_id,
-    ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+CREATE TABLE IF NOT EXISTS admins (
+    admin_id INT AUTO_INCREMENT PRIMARY KEY,
+    employee_number VARCHAR(40) NULL,
+    first_name VARCHAR(80) NULL,
+    middle_name VARCHAR(80) NULL,
+    last_name VARCHAR(80) NULL,
+    email VARCHAR(160) NULL,
+    full_name VARCHAR(180) NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'active',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
 
-ALTER TABLE courses
-    ADD COLUMN status ENUM('active','inactive') NOT NULL DEFAULT 'active' AFTER department_id,
-    ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+CREATE TABLE IF NOT EXISTS users (
+    user_id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(80) NOT NULL,
+    email VARCHAR(160) NOT NULL,
+    password VARCHAR(160) NOT NULL,
+    role VARCHAR(20) NOT NULL,
+    full_name VARCHAR(180) NULL,
+    student_id INT NULL,
+    professor_id INT NULL,
+    admin_id INT NULL,
+    staff_id INT NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
 
-ALTER TABLE sections
-    ADD COLUMN status ENUM('open','closed','archived') NOT NULL DEFAULT 'open' AFTER section_year_level,
-    ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+CREATE TABLE IF NOT EXISTS subjects (
+    subject_id INT AUTO_INCREMENT PRIMARY KEY,
+    subject_code VARCHAR(40) NOT NULL,
+    subject_name VARCHAR(180) NOT NULL,
+    units DECIMAL(6,2) NOT NULL DEFAULT 3.00,
+    department_id INT NULL,
+    professor_id INT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'active',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
 
-ALTER TABLE classes
-    ADD COLUMN capacity INT NULL AFTER room,
-    ADD COLUMN status ENUM('open','closed','cancelled','completed') NOT NULL DEFAULT 'open' AFTER capacity,
-    ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
-
-ALTER TABLE enrollments
-    ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
-
-ALTER TABLE grades
-    ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
-
-ALTER TABLE users
-    ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1 AFTER role,
-    ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
-
--- =========================================================
--- 3) ADD UNIQUE CONSTRAINTS
--- =========================================================
-
-ALTER TABLE departments
-    ADD CONSTRAINT uq_departments_department_name UNIQUE (department_name);
-
-ALTER TABLE courses
-    ADD CONSTRAINT uq_courses_course_name UNIQUE (course_name);
-
-ALTER TABLE school_years
-    ADD CONSTRAINT uq_school_years_school_year UNIQUE (school_year);
-
-ALTER TABLE semesters
-    ADD CONSTRAINT uq_semesters_semester_name UNIQUE (semester_name);
-
-ALTER TABLE subjects
-    ADD CONSTRAINT uq_subjects_subject_code UNIQUE (subject_code);
-
-ALTER TABLE sections
-    ADD CONSTRAINT uq_sections_section_name UNIQUE (section_name);
-
-ALTER TABLE admins
-    ADD CONSTRAINT uq_admins_email UNIQUE (email);
-
-ALTER TABLE staffs
-    ADD CONSTRAINT uq_staffs_email UNIQUE (email);
-
-ALTER TABLE students
-    ADD CONSTRAINT uq_students_email UNIQUE (email);
-
-ALTER TABLE professors
-    ADD CONSTRAINT uq_professors_email UNIQUE (email);
-
-ALTER TABLE users
-    ADD CONSTRAINT uq_users_username UNIQUE (username),
-    ADD CONSTRAINT uq_users_email UNIQUE (email),
-    ADD CONSTRAINT uq_users_student_id UNIQUE (student_id),
-    ADD CONSTRAINT uq_users_professor_id UNIQUE (professor_id),
-    ADD CONSTRAINT uq_users_admin_id UNIQUE (admin_id),
-    ADD CONSTRAINT uq_users_staff_id UNIQUE (staff_id);
-
-ALTER TABLE enrollments
-    ADD CONSTRAINT uq_enrollments_student_class UNIQUE (student_id, class_id);
-
-ALTER TABLE grades
-    ADD CONSTRAINT uq_grades_enrollment UNIQUE (enrollment_id);
-
-ALTER TABLE classes
-    ADD CONSTRAINT uq_classes_offering UNIQUE
-    (subject_id, professor_id, section_id, semester_id, school_year_id);
-
--- =========================================================
--- 4) ADD CHECK CONSTRAINTS
--- =========================================================
-
-ALTER TABLE students
-    ADD CONSTRAINT chk_students_current_year_level
-    CHECK (current_year_level BETWEEN 1 AND 6);
-
-ALTER TABLE sections
-    ADD CONSTRAINT chk_sections_section_year_level
-    CHECK (section_year_level BETWEEN 1 AND 6);
-
-ALTER TABLE classes
-    ADD CONSTRAINT chk_classes_capacity
-    CHECK (capacity IS NULL OR capacity > 0);
-
-ALTER TABLE grades
-    ADD CONSTRAINT chk_grades_prelim
-    CHECK (prelim IS NULL OR (prelim >= 0 AND prelim <= 100)),
-    ADD CONSTRAINT chk_grades_midterm
-    CHECK (midterm IS NULL OR (midterm >= 0 AND midterm <= 100)),
-    ADD CONSTRAINT chk_grades_finals
-    CHECK (finals IS NULL OR (finals >= 0 AND finals <= 100)),
-    ADD CONSTRAINT chk_grades_final_grade
-    CHECK (final_grade IS NULL OR (final_grade >= 0 AND final_grade <= 100));
-
-ALTER TABLE users
-    ADD CONSTRAINT chk_users_exactly_one_profile
-    CHECK (
-        (CASE WHEN student_id IS NOT NULL THEN 1 ELSE 0 END) +
-        (CASE WHEN professor_id IS NOT NULL THEN 1 ELSE 0 END) +
-        (CASE WHEN admin_id IS NOT NULL THEN 1 ELSE 0 END) +
-        (CASE WHEN staff_id IS NOT NULL THEN 1 ELSE 0 END) = 1
-    ),
-    ADD CONSTRAINT chk_users_role_match
-    CHECK (
-        (role = 'student'   AND student_id IS NOT NULL AND professor_id IS NULL AND admin_id IS NULL AND staff_id IS NULL) OR
-        (role = 'professor' AND professor_id IS NOT NULL AND student_id IS NULL AND admin_id IS NULL AND staff_id IS NULL) OR
-        (role = 'admin'     AND admin_id IS NOT NULL AND student_id IS NULL AND professor_id IS NULL AND staff_id IS NULL) OR
-        (role = 'staff'     AND staff_id IS NOT NULL AND student_id IS NULL AND professor_id IS NULL AND admin_id IS NULL)
-    );
-
--- =========================================================
--- 5) NORMALIZE CLASS SCHEDULE
--- =========================================================
+CREATE TABLE IF NOT EXISTS classes (
+    class_id INT AUTO_INCREMENT PRIMARY KEY,
+    subject_id INT NOT NULL,
+    professor_id INT NULL,
+    section_id INT NULL,
+    semester_id INT NULL,
+    school_year_id INT NULL,
+    room VARCHAR(50) NULL,
+    capacity INT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'open',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
 
 CREATE TABLE IF NOT EXISTS class_schedules (
     class_schedule_id INT AUTO_INCREMENT PRIMARY KEY,
     class_id INT NOT NULL,
-    day_of_week ENUM('Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday') NOT NULL,
+    day_of_week VARCHAR(20) NOT NULL,
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,
     room VARCHAR(50) NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_class_schedules_class
-        FOREIGN KEY (class_id) REFERENCES classes(class_id)
-        ON UPDATE CASCADE
-        ON DELETE CASCADE,
-    CONSTRAINT chk_class_schedules_time
-        CHECK (start_time < end_time),
-    CONSTRAINT uq_class_schedules_slot
-        UNIQUE (class_id, day_of_week, start_time, end_time)
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
--- =========================================================
--- 6) ADD PERFORMANCE INDEXES
--- =========================================================
+CREATE TABLE IF NOT EXISTS enrollments (
+    enrollment_id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL,
+    class_id INT NOT NULL,
+    enrollment_date DATE NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'enrolled',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
 
-CREATE INDEX idx_students_course_id ON students(course_id);
-CREATE INDEX idx_professors_department_id ON professors(department_id);
-CREATE INDEX idx_staffs_department_id ON staffs(department_id);
-CREATE INDEX idx_subjects_department_id ON subjects(department_id);
-CREATE INDEX idx_courses_department_id ON courses(department_id);
-CREATE INDEX idx_sections_course_id ON sections(course_id);
+CREATE TABLE IF NOT EXISTS grades (
+    grade_id INT AUTO_INCREMENT PRIMARY KEY,
+    enrollment_id INT NOT NULL,
+    midterm_performance DECIMAL(6,2) NULL,
+    midterm_attendance DECIMAL(6,2) NULL,
+    midterm_written_works DECIMAL(6,2) NULL,
+    midterm_exam DECIMAL(6,2) NULL,
+    finals_performance DECIMAL(6,2) NULL,
+    finals_attendance DECIMAL(6,2) NULL,
+    finals_written_works DECIMAL(6,2) NULL,
+    finals_exam DECIMAL(6,2) NULL,
+    midterm_raw_score DECIMAL(6,2) NULL,
+    finals_raw_score DECIMAL(6,2) NULL,
+    final_raw_grade DECIMAL(6,2) NULL,
+    final_grade DECIMAL(6,2) NULL,
+    grade_value DECIMAL(6,2) NULL,
+    remarks VARCHAR(40) NULL,
+    prelim DECIMAL(6,2) NULL,
+    midterm DECIMAL(6,2) NULL,
+    finals DECIMAL(6,2) NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
 
-CREATE INDEX idx_classes_subject_id ON classes(subject_id);
-CREATE INDEX idx_classes_professor_id ON classes(professor_id);
-CREATE INDEX idx_classes_section_id ON classes(section_id);
-CREATE INDEX idx_classes_semester_id ON classes(semester_id);
-CREATE INDEX idx_classes_school_year_id ON classes(school_year_id);
+ALTER TABLE departments ADD COLUMN IF NOT EXISTS office_location VARCHAR(160) NULL;
+ALTER TABLE departments ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'active';
 
-CREATE INDEX idx_enrollments_student_id ON enrollments(student_id);
-CREATE INDEX idx_enrollments_class_id ON enrollments(class_id);
-CREATE INDEX idx_grades_enrollment_id ON grades(enrollment_id);
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS course_code VARCHAR(40) NULL;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS total_units DECIMAL(6,2) NULL;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'active';
 
--- =========================================================
--- 7) DEFAULTS
--- =========================================================
+ALTER TABLE school_years ADD COLUMN IF NOT EXISTS is_current TINYINT(1) NOT NULL DEFAULT 1;
+ALTER TABLE school_years ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'active';
 
-ALTER TABLE enrollments
-    MODIFY COLUMN enrollment_date DATE NOT NULL DEFAULT (CURRENT_DATE);
+ALTER TABLE semesters ADD COLUMN IF NOT EXISTS is_current TINYINT(1) NOT NULL DEFAULT 1;
+ALTER TABLE semesters ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'active';
 
-ALTER TABLE enrollments
-    MODIFY COLUMN status ENUM('enrolled','dropped','completed') NOT NULL DEFAULT 'enrolled';
+ALTER TABLE sections ADD COLUMN IF NOT EXISTS year_level INT NULL;
+ALTER TABLE sections ADD COLUMN IF NOT EXISTS section_year_level INT NOT NULL DEFAULT 1;
+ALTER TABLE sections ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'open';
 
-COMMIT;
+ALTER TABLE students ADD COLUMN IF NOT EXISTS student_number VARCHAR(40) NULL;
+ALTER TABLE students ADD COLUMN IF NOT EXISTS full_name VARCHAR(180) NULL;
+ALTER TABLE students ADD COLUMN IF NOT EXISTS course_id INT NULL;
+ALTER TABLE students ADD COLUMN IF NOT EXISTS year_level INT NULL;
+ALTER TABLE students ADD COLUMN IF NOT EXISTS contact_number VARCHAR(20) NULL;
+ALTER TABLE students ADD COLUMN IF NOT EXISTS section_id INT NULL;
+ALTER TABLE students ADD COLUMN IF NOT EXISTS current_year_level INT NOT NULL DEFAULT 1;
+ALTER TABLE students ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'active';
+
+ALTER TABLE professors ADD COLUMN IF NOT EXISTS employee_number VARCHAR(40) NULL;
+ALTER TABLE professors ADD COLUMN IF NOT EXISTS contact_number VARCHAR(20) NULL;
+ALTER TABLE professors ADD COLUMN IF NOT EXISTS full_name VARCHAR(180) NULL;
+ALTER TABLE professors ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'active';
+
+ALTER TABLE staffs ADD COLUMN IF NOT EXISTS employee_number VARCHAR(40) NULL;
+ALTER TABLE staffs ADD COLUMN IF NOT EXISTS first_name VARCHAR(80) NULL;
+ALTER TABLE staffs ADD COLUMN IF NOT EXISTS middle_name VARCHAR(80) NULL;
+ALTER TABLE staffs ADD COLUMN IF NOT EXISTS last_name VARCHAR(80) NULL;
+ALTER TABLE staffs ADD COLUMN IF NOT EXISTS full_name VARCHAR(180) NULL;
+ALTER TABLE staffs ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'active';
+
+ALTER TABLE admins ADD COLUMN IF NOT EXISTS employee_number VARCHAR(40) NULL;
+ALTER TABLE admins ADD COLUMN IF NOT EXISTS first_name VARCHAR(80) NULL;
+ALTER TABLE admins ADD COLUMN IF NOT EXISTS middle_name VARCHAR(80) NULL;
+ALTER TABLE admins ADD COLUMN IF NOT EXISTS last_name VARCHAR(80) NULL;
+ALTER TABLE admins ADD COLUMN IF NOT EXISTS full_name VARCHAR(180) NULL;
+ALTER TABLE admins ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'active';
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name VARCHAR(180) NULL;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS student_id INT NULL;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS professor_id INT NULL;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_id INT NULL;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS staff_id INT NULL;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active TINYINT(1) NOT NULL DEFAULT 1;
+
+ALTER TABLE subjects ADD COLUMN IF NOT EXISTS professor_id INT NULL;
+ALTER TABLE subjects ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'active';
+
+ALTER TABLE classes ADD COLUMN IF NOT EXISTS semester_id INT NULL;
+ALTER TABLE classes ADD COLUMN IF NOT EXISTS school_year_id INT NULL;
+ALTER TABLE classes ADD COLUMN IF NOT EXISTS capacity INT NULL;
+ALTER TABLE classes ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'open';
+
+ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS enrollment_date DATE NULL;
+ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'enrolled';
+
+ALTER TABLE grades ADD COLUMN IF NOT EXISTS midterm_performance DECIMAL(6,2) NULL;
+ALTER TABLE grades ADD COLUMN IF NOT EXISTS midterm_attendance DECIMAL(6,2) NULL;
+ALTER TABLE grades ADD COLUMN IF NOT EXISTS midterm_written_works DECIMAL(6,2) NULL;
+ALTER TABLE grades ADD COLUMN IF NOT EXISTS midterm_exam DECIMAL(6,2) NULL;
+ALTER TABLE grades ADD COLUMN IF NOT EXISTS finals_performance DECIMAL(6,2) NULL;
+ALTER TABLE grades ADD COLUMN IF NOT EXISTS finals_attendance DECIMAL(6,2) NULL;
+ALTER TABLE grades ADD COLUMN IF NOT EXISTS finals_written_works DECIMAL(6,2) NULL;
+ALTER TABLE grades ADD COLUMN IF NOT EXISTS finals_exam DECIMAL(6,2) NULL;
+ALTER TABLE grades ADD COLUMN IF NOT EXISTS midterm_raw_score DECIMAL(6,2) NULL;
+ALTER TABLE grades ADD COLUMN IF NOT EXISTS finals_raw_score DECIMAL(6,2) NULL;
+ALTER TABLE grades ADD COLUMN IF NOT EXISTS final_raw_grade DECIMAL(6,2) NULL;
+ALTER TABLE grades ADD COLUMN IF NOT EXISTS final_grade DECIMAL(6,2) NULL;
+ALTER TABLE grades ADD COLUMN IF NOT EXISTS grade_value DECIMAL(6,2) NULL;
+ALTER TABLE grades ADD COLUMN IF NOT EXISTS remarks VARCHAR(40) NULL;

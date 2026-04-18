@@ -2,6 +2,8 @@ package com.mycompany.schoolmanagementssytem_edp;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
@@ -9,39 +11,63 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 public class SchoolRepository {
 
-    public record GradeInput(BigDecimal prelim, BigDecimal midterm, BigDecimal finals, BigDecimal finalGrade) {
+    public SchoolRepository() {
+        DatabaseBootstrap.ensureInitialized();
+    }
 
-        public BigDecimal resolvedFinalGrade() {
-            if (finalGrade != null) {
-                return finalGrade;
-            }
+    public record GradeInput(
+            BigDecimal midtermPerformance,
+            BigDecimal midtermAttendance,
+            BigDecimal midtermWrittenWorks,
+            BigDecimal midtermExam,
+            BigDecimal finalsPerformance,
+            BigDecimal finalsAttendance,
+            BigDecimal finalsWrittenWorks,
+            BigDecimal finalsExam,
+            BigDecimal midtermRawScore,
+            BigDecimal finalsRawScore,
+            BigDecimal finalRawGrade,
+            BigDecimal finalGrade
+    ) {
 
-            BigDecimal total = BigDecimal.ZERO;
-            int count = 0;
+        public GradeInput {
+            if (midtermRawScore == null) {
+                midtermRawScore = AcademicCalculator.computeTermRawScore(
+                        midtermPerformance,
+                        midtermAttendance,
+                        midtermWrittenWorks,
+                        midtermExam
+                );
+            }
+            if (finalsRawScore == null) {
+                finalsRawScore = AcademicCalculator.computeTermRawScore(
+                        finalsPerformance,
+                        finalsAttendance,
+                        finalsWrittenWorks,
+                        finalsExam
+                );
+            }
+            if (finalRawGrade == null) {
+                finalRawGrade = AcademicCalculator.computeFinalRawGrade(midtermRawScore, finalsRawScore);
+            }
+            if (finalGrade == null) {
+                finalGrade = AcademicCalculator.toUniversityGrade(finalRawGrade);
+            }
+        }
 
-            if (prelim != null) {
-                total = total.add(prelim);
-                count++;
-            }
-            if (midterm != null) {
-                total = total.add(midterm);
-                count++;
-            }
-            if (finals != null) {
-                total = total.add(finals);
-                count++;
-            }
-
-            return count == 0 ? null : total.divide(BigDecimal.valueOf(count), 2, RoundingMode.HALF_UP);
+        public String remarks() {
+            return AcademicCalculator.remarksFor(finalGrade, finalRawGrade);
         }
     }
 
@@ -277,11 +303,22 @@ public class SchoolRepository {
 
             List<String> assignments = new ArrayList<>();
             List<Object> values = new ArrayList<>();
-            addUpdateValue(columns, assignments, values, "prelim", gradeInput.prelim());
-            addUpdateValue(columns, assignments, values, "midterm", gradeInput.midterm());
-            addUpdateValue(columns, assignments, values, "finals", gradeInput.finals());
-            addUpdateValue(columns, assignments, values, "final_grade", gradeInput.resolvedFinalGrade());
-            addUpdateValue(columns, assignments, values, "grade_value", gradeInput.resolvedFinalGrade());
+            addUpdateValue(columns, assignments, values, "midterm_performance", gradeInput.midtermPerformance());
+            addUpdateValue(columns, assignments, values, "midterm_attendance", gradeInput.midtermAttendance());
+            addUpdateValue(columns, assignments, values, "midterm_written_works", gradeInput.midtermWrittenWorks());
+            addUpdateValue(columns, assignments, values, "midterm_exam", gradeInput.midtermExam());
+            addUpdateValue(columns, assignments, values, "finals_performance", gradeInput.finalsPerformance());
+            addUpdateValue(columns, assignments, values, "finals_attendance", gradeInput.finalsAttendance());
+            addUpdateValue(columns, assignments, values, "finals_written_works", gradeInput.finalsWrittenWorks());
+            addUpdateValue(columns, assignments, values, "finals_exam", gradeInput.finalsExam());
+            addUpdateValue(columns, assignments, values, "midterm_raw_score", gradeInput.midtermRawScore());
+            addUpdateValue(columns, assignments, values, "finals_raw_score", gradeInput.finalsRawScore());
+            addUpdateValue(columns, assignments, values, "final_raw_grade", gradeInput.finalRawGrade());
+            addUpdateValue(columns, assignments, values, "final_grade", gradeInput.finalGrade());
+            addUpdateValue(columns, assignments, values, "grade_value", gradeInput.finalGrade());
+            addUpdateValue(columns, assignments, values, "remarks", gradeInput.remarks());
+            addUpdateValue(columns, assignments, values, "midterm", gradeInput.midtermRawScore());
+            addUpdateValue(columns, assignments, values, "finals", gradeInput.finalsRawScore());
 
             if (assignments.isEmpty()) {
                 throw new SQLException("No supported grade columns were found for update.");
@@ -300,11 +337,22 @@ public class SchoolRepository {
             List<String> insertColumns = new ArrayList<>();
             List<Object> insertValues = new ArrayList<>();
             addInsertValue(columns, insertColumns, insertValues, "enrollment_id", enrollmentId);
-            addInsertValue(columns, insertColumns, insertValues, "prelim", gradeInput.prelim());
-            addInsertValue(columns, insertColumns, insertValues, "midterm", gradeInput.midterm());
-            addInsertValue(columns, insertColumns, insertValues, "finals", gradeInput.finals());
-            addInsertValue(columns, insertColumns, insertValues, "final_grade", gradeInput.resolvedFinalGrade());
-            addInsertValue(columns, insertColumns, insertValues, "grade_value", gradeInput.resolvedFinalGrade());
+            addInsertValue(columns, insertColumns, insertValues, "midterm_performance", gradeInput.midtermPerformance());
+            addInsertValue(columns, insertColumns, insertValues, "midterm_attendance", gradeInput.midtermAttendance());
+            addInsertValue(columns, insertColumns, insertValues, "midterm_written_works", gradeInput.midtermWrittenWorks());
+            addInsertValue(columns, insertColumns, insertValues, "midterm_exam", gradeInput.midtermExam());
+            addInsertValue(columns, insertColumns, insertValues, "finals_performance", gradeInput.finalsPerformance());
+            addInsertValue(columns, insertColumns, insertValues, "finals_attendance", gradeInput.finalsAttendance());
+            addInsertValue(columns, insertColumns, insertValues, "finals_written_works", gradeInput.finalsWrittenWorks());
+            addInsertValue(columns, insertColumns, insertValues, "finals_exam", gradeInput.finalsExam());
+            addInsertValue(columns, insertColumns, insertValues, "midterm_raw_score", gradeInput.midtermRawScore());
+            addInsertValue(columns, insertColumns, insertValues, "finals_raw_score", gradeInput.finalsRawScore());
+            addInsertValue(columns, insertColumns, insertValues, "final_raw_grade", gradeInput.finalRawGrade());
+            addInsertValue(columns, insertColumns, insertValues, "final_grade", gradeInput.finalGrade());
+            addInsertValue(columns, insertColumns, insertValues, "grade_value", gradeInput.finalGrade());
+            addInsertValue(columns, insertColumns, insertValues, "remarks", gradeInput.remarks());
+            addInsertValue(columns, insertColumns, insertValues, "midterm", gradeInput.midtermRawScore());
+            addInsertValue(columns, insertColumns, insertValues, "finals", gradeInput.finalsRawScore());
 
             String placeholders = String.join(", ", insertColumns.stream().map(column -> "?").toList());
             String sql = "INSERT INTO " + gradesTable + " (" + String.join(", ", insertColumns) + ") VALUES (" + placeholders + ")";
@@ -488,6 +536,226 @@ public class SchoolRepository {
         }
     }
 
+    public GradeInput findGradeInput(int enrollmentId) throws SQLException {
+        try (Connection connection = DBConnection.getConnection()) {
+            return loadGradeInput(connection, enrollmentId);
+        }
+    }
+
+    public TableData loadProfessorMasterList(User user, int classId) throws SQLException {
+        try (Connection connection = DBConnection.getConnection()) {
+            Integer professorId = resolveUserReferenceId(connection, Role.PROFESSOR, user);
+            if (professorId == null || !professorOwnsClass(connection, professorId, classId)) {
+                throw new SQLException("The selected class is not assigned to the logged-in professor.");
+            }
+
+            String sql = """
+                    SELECT e.enrollment_id, e.student_id, e.status, c.subject_id
+                    FROM enrollments e
+                    JOIN classes c ON e.class_id = c.class_id
+                    WHERE e.class_id = ?
+                    ORDER BY e.student_id
+                    """;
+
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setInt(1, classId);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    List<Object[]> rows = new ArrayList<>();
+                    while (resultSet.next()) {
+                        Integer enrollmentId = integerValue(resultSet.getObject("enrollment_id"));
+                        Integer studentId = integerValue(resultSet.getObject("student_id"));
+                        GradeInput gradeInput = loadGradeInput(connection, enrollmentId);
+
+                        rows.add(new Object[]{
+                            enrollmentId,
+                            studentId,
+                            resolveStudentNumber(connection, studentId),
+                            resolveEntityName(connection, studentId, "students", "student_id",
+                                    safeString(resolveUsernameByStudentId(connection, studentId), "Unknown Student")),
+                            resolveSubjectDisplay(connection, integerValue(resultSet.getObject("subject_id"))),
+                            decimalOrDash(gradeInput.midtermRawScore()),
+                            decimalOrDash(gradeInput.finalsRawScore()),
+                            decimalOrDash(gradeInput.finalRawGrade()),
+                            formatEquivalent(gradeInput.finalGrade()),
+                            gradeInput.remarks(),
+                            safeString(resultSet.getString("status"), "enrolled")
+                        });
+                    }
+
+                    return rows.isEmpty()
+                            ? placeholder("Enrollment Id", "Student Id", "Student Number", "Student", "Subject", "Midterm Raw", "Finals Raw", "Final Raw", "Equivalent", "Remarks", "Status")
+                            : new TableData(
+                                    new String[]{"Enrollment Id", "Student Id", "Student Number", "Student", "Subject", "Midterm Raw", "Finals Raw", "Final Raw", "Equivalent", "Remarks", "Status"},
+                                    rows
+                            );
+                }
+            }
+        }
+    }
+
+    public void exportProfessorGradeTemplate(User user, int classId, Path outputPath) throws Exception {
+        try (Connection connection = DBConnection.getConnection()) {
+            Integer professorId = resolveUserReferenceId(connection, Role.PROFESSOR, user);
+            if (professorId == null || !professorOwnsClass(connection, professorId, classId)) {
+                throw new SQLException("The selected class is not assigned to the logged-in professor.");
+            }
+
+            String subjectCode = safeString(resolveSubjectCode(connection, integerValue(lookupColumnValue(connection, "classes", "class_id", classId, "subject_id"))), "-");
+            String subjectName = resolveSubjectName(connection, integerValue(lookupColumnValue(connection, "classes", "class_id", classId, "subject_id")));
+            BigDecimal units = decimalValue(lookupColumnValue(connection, "subjects", "subject_id", integerValue(lookupColumnValue(connection, "classes", "class_id", classId, "subject_id")), "units"));
+            TableData masterList = loadProfessorMasterList(user, classId);
+            if (countMeaningfulRows(masterList) == 0) {
+                throw new SQLException("The selected class does not have enrolled students yet.");
+            }
+
+            List<String> headers = List.of(
+                    "Class ID",
+                    "Enrollment ID",
+                    "Student ID",
+                    "Student Number",
+                    "Student Name",
+                    "Subject Code",
+                    "Subject Name",
+                    "Units",
+                    "Midterm Performance",
+                    "Midterm Attendance",
+                    "Midterm Written Works",
+                    "Midterm Exam",
+                    "Finals Performance",
+                    "Finals Attendance",
+                    "Finals Written Works",
+                    "Finals Exam"
+            );
+
+            List<List<String>> rows = new ArrayList<>();
+            for (Object[] masterRow : masterList.rows()) {
+                Integer enrollmentId = integerValue(masterRow[0]);
+                GradeInput gradeInput = findGradeInput(enrollmentId);
+                rows.add(List.of(
+                        String.valueOf(classId),
+                        String.valueOf(masterRow[0]),
+                        String.valueOf(masterRow[1]),
+                        String.valueOf(masterRow[2]),
+                        String.valueOf(masterRow[3]),
+                        subjectCode,
+                        subjectName,
+                        formatDecimal(units),
+                        nullToEmpty(gradeInput.midtermPerformance()),
+                        nullToEmpty(gradeInput.midtermAttendance()),
+                        nullToEmpty(gradeInput.midtermWrittenWorks()),
+                        nullToEmpty(gradeInput.midtermExam()),
+                        nullToEmpty(gradeInput.finalsPerformance()),
+                        nullToEmpty(gradeInput.finalsAttendance()),
+                        nullToEmpty(gradeInput.finalsWrittenWorks()),
+                        nullToEmpty(gradeInput.finalsExam())
+                ));
+            }
+
+            SimpleXlsxWorkbook.writeWorkbook(outputPath, "Grade Template", headers, rows);
+        }
+    }
+
+    public int importProfessorGradeTemplate(User user, int classId, Path inputPath) throws Exception {
+        try (Connection connection = DBConnection.getConnection()) {
+            Integer professorId = resolveUserReferenceId(connection, Role.PROFESSOR, user);
+            if (professorId == null || !professorOwnsClass(connection, professorId, classId)) {
+                throw new SQLException("The selected class is not assigned to the logged-in professor.");
+            }
+        }
+
+        List<Map<String, String>> rows = SimpleXlsxWorkbook.readRows(inputPath);
+        if (rows.isEmpty()) {
+            throw new IllegalArgumentException("The selected Excel file does not contain any grade rows.");
+        }
+
+        List<String> requiredHeaders = List.of(
+                "Class ID",
+                "Enrollment ID",
+                "Midterm Performance",
+                "Midterm Attendance",
+                "Midterm Written Works",
+                "Midterm Exam",
+                "Finals Performance",
+                "Finals Attendance",
+                "Finals Written Works",
+                "Finals Exam"
+        );
+
+        for (String requiredHeader : requiredHeaders) {
+            if (!rows.get(0).containsKey(requiredHeader)) {
+                throw new IllegalArgumentException("Missing required Excel column: " + requiredHeader);
+            }
+        }
+
+        int importedCount = 0;
+        for (Map<String, String> row : rows) {
+            String classIdText = row.getOrDefault("Class ID", "").trim();
+            String enrollmentIdText = row.getOrDefault("Enrollment ID", "").trim();
+            if (classIdText.isBlank() || enrollmentIdText.isBlank()) {
+                continue;
+            }
+
+            int rowClassId = Integer.parseInt(classIdText);
+            if (rowClassId != classId) {
+                throw new IllegalArgumentException("The Excel file contains a row for class " + rowClassId + ", but the selected class is " + classId + ".");
+            }
+
+            BigDecimal midtermPerformance = AcademicCalculator.parseScore(row.get("Midterm Performance"), "Midterm Performance");
+            BigDecimal midtermAttendance = AcademicCalculator.parseScore(row.get("Midterm Attendance"), "Midterm Attendance");
+            BigDecimal midtermWrittenWorks = AcademicCalculator.parseScore(row.get("Midterm Written Works"), "Midterm Written Works");
+            BigDecimal midtermExam = AcademicCalculator.parseScore(row.get("Midterm Exam"), "Midterm Exam");
+            BigDecimal finalsPerformance = AcademicCalculator.parseScore(row.get("Finals Performance"), "Finals Performance");
+            BigDecimal finalsAttendance = AcademicCalculator.parseScore(row.get("Finals Attendance"), "Finals Attendance");
+            BigDecimal finalsWrittenWorks = AcademicCalculator.parseScore(row.get("Finals Written Works"), "Finals Written Works");
+            BigDecimal finalsExam = AcademicCalculator.parseScore(row.get("Finals Exam"), "Finals Exam");
+
+            boolean hasAnyValue = midtermPerformance != null || midtermAttendance != null || midtermWrittenWorks != null || midtermExam != null
+                    || finalsPerformance != null || finalsAttendance != null || finalsWrittenWorks != null || finalsExam != null;
+            if (!hasAnyValue) {
+                continue;
+            }
+
+            if (midtermPerformance == null || midtermAttendance == null || midtermWrittenWorks == null || midtermExam == null
+                    || finalsPerformance == null || finalsAttendance == null || finalsWrittenWorks == null || finalsExam == null) {
+                throw new IllegalArgumentException("Each filled Excel row must provide all Midterm and Finals component scores.");
+            }
+
+            saveGrade(Integer.parseInt(enrollmentIdText), new GradeInput(
+                    midtermPerformance,
+                    midtermAttendance,
+                    midtermWrittenWorks,
+                    midtermExam,
+                    finalsPerformance,
+                    finalsAttendance,
+                    finalsWrittenWorks,
+                    finalsExam,
+                    null,
+                    null,
+                    null,
+                    null
+            ));
+            importedCount++;
+        }
+
+        if (importedCount == 0) {
+            throw new IllegalArgumentException("No grade rows were imported. Fill in the component score columns first.");
+        }
+
+        return importedCount;
+    }
+
+    public void exportStudentCorPdf(User user, Path outputPath) throws Exception {
+        try (Connection connection = DBConnection.getConnection()) {
+            SimplePdfExporter.exportLines(outputPath, "", buildStudentCorLines(connection, user));
+        }
+    }
+
+    public void exportStudentGradesPdf(User user, Path outputPath) throws Exception {
+        try (Connection connection = DBConnection.getConnection()) {
+            SimplePdfExporter.exportLines(outputPath, "", buildStudentGradeReportLines(connection, user));
+        }
+    }
+
     public String buildStudentDocumentHtml(User user) throws SQLException {
         try (Connection connection = DBConnection.getConnection()) {
             TableData profile = profileTable(connection, Role.STUDENT, user);
@@ -498,10 +766,10 @@ public class SchoolRepository {
                     <html>
                     <head>
                         <meta charset="UTF-8">
-                        <title>Certificate of Registration</title>
+                        <title>BulSU Certificate of Registration</title>
                         <style>
                             body { font-family: Arial, sans-serif; color: #1f2937; margin: 32px; }
-                            h1, h2 { margin-bottom: 8px; }
+                            h1, h2, h3 { margin-bottom: 8px; }
                             .meta { margin-bottom: 24px; }
                             .meta div { margin: 4px 0; }
                             table { width: 100%; border-collapse: collapse; margin-top: 16px; }
@@ -511,8 +779,9 @@ public class SchoolRepository {
                         </style>
                     </head>
                     <body>
-                        <h1>BulSU School Management System</h1>
+                        <h1>Bulacan State University</h1>
                         <h2>Certificate of Registration / Advising Slip</h2>
+                        <h3>Student Academic Portal</h3>
                         <div class="meta">
                     """);
 
@@ -563,12 +832,16 @@ public class SchoolRepository {
     }
 
     private DashboardPageData loadStudentPage(Connection connection, User user, String section) throws SQLException {
-        TableData subjectTable = loadStudentSubjectRows(connection, user);
-        List<MetricCardData> metrics = studentMetrics(subjectTable);
+        List<StudentAcademicRow> academicRows = loadStudentAcademicRows(connection, user);
+        List<MetricCardData> metrics = studentMetrics(academicRows);
+        TableData profile = profileTable(connection, Role.STUDENT, user);
+        TableData subjectStatusTable = studentSubjectStatusTable(academicRows);
+        TableData gradesTable = studentGradesTable(academicRows);
+        TableData documentTable = studentDocumentTable(academicRows);
+        String academicContext = currentAcademicContextLabel(academicRows);
 
         return switch (section) {
             case "My Profile" -> {
-                TableData profile = profileTable(connection, Role.STUDENT, user);
                 yield new DashboardPageData(
                         "My Profile",
                         "View the account and student information connected to your login.",
@@ -582,59 +855,56 @@ public class SchoolRepository {
             }
             case "My Subjects" -> new DashboardPageData(
                     "My Subjects",
-                    "Subjects enrolled under the current student account.",
+                    "Subjects enrolled for " + academicContext + ".",
                     metrics,
                     "Enrolled Subjects",
-                    new String[]{"Subject", "Professor", "Status"},
-                    toSubjectStatusRows(subjectTable),
+                    subjectStatusTable.columns(),
+                    subjectStatusTable.rows(),
                     "Subject Tips",
                     List.of(
-                            "Use the search box to filter subjects, professors, or status.",
-                            "Double-click any row to see the full record details.",
-                            "Refresh after grade encoding or enrollment updates."
+                            "Statuses update from live enrollment and grading records.",
+                            "Search by subject code, professor, schedule, or section.",
+                            "Completed subjects remain visible with their current grade status."
                     )
             );
             case "My Grades" -> new DashboardPageData(
                     "My Grades",
-                    "Published grades sourced from the MySQL database.",
+                    "Computed academic grades and transmuted equivalents for " + academicContext + ".",
                     metrics,
                     "Grade Book",
-                    new String[]{"Subject", "Grade", "Remarks"},
-                    toGradeRows(subjectTable),
+                    gradesTable.columns(),
+                    gradesTable.rows(),
                     "Grade Status",
                     List.of(
-                            "Grades marked Pending have not been encoded yet.",
-                            "Posted grades are pulled directly from the grades table.",
-                            "Contact your professor if a subject record looks incomplete."
+                            "Midterm and finals raw scores are computed from the stored component scores.",
+                            "Equivalent grade uses the same transmutation logic as the GWA card.",
+                            "Subjects with missing components stay marked In Progress instead of failing silently."
                     )
             );
             case "Schedule" -> schedulePage(connection, roleSectionTitle(section), metrics, user, Role.STUDENT);
-            case "COR & Advising Slip" -> {
-                TableData documentTable = loadStudentDocumentRows(connection, user);
-                yield new DashboardPageData(
-                        "COR & Advising Slip",
-                        "Registration details that can be downloaded for submission or advising.",
-                        metrics,
-                        "Registration Document",
-                        documentTable.columns(),
-                        documentTable.rows(),
-                        "Document Notes",
-                        List.of(
-                                "Use the download button to export the current registration view.",
-                                "Enrollment status is pulled from the enrollments table.",
-                                "Schedule details are summarized from class_schedules when available."
-                        )
-                );
-            }
-            default -> new DashboardPageData(
-                    "Student Overview",
-                    "Track subjects, grades, and day-to-day schedule information.",
+            case "COR & Advising Slip" -> new DashboardPageData(
+                    "COR & Advising Slip",
+                    "Registration details and advising data for " + academicContext + ".",
                     metrics,
-                    "Enrolled Subjects",
-                    subjectTable.columns(),
-                    subjectTable.rows(),
-                    "Today's Schedule",
-                    buildStudentNotes(connection, user)
+                    "Registration Document",
+                    documentTable.columns(),
+                    documentTable.rows(),
+                    "Document Notes",
+                    List.of(
+                            "PDF export uses the same live data shown in the table.",
+                            "Schedules are summarized directly from class_schedules.",
+                            "Units and section information come from the linked class and subject records."
+                    )
+            );
+            default -> new DashboardPageData(
+                    "Student Dashboard",
+                    "Live academic summary for " + academicContext + ".",
+                    metrics,
+                    "Academic Snapshot",
+                    gradesTable.columns(),
+                    gradesTable.rows(),
+                    "Academic Notes",
+                    buildStudentNotes(connection, user, academicRows)
             );
         };
     }
@@ -664,30 +934,30 @@ public class SchoolRepository {
             }
             case "My Classes" -> new DashboardPageData(
                     "My Classes",
-                    "Assigned classes and current enrollment counts.",
+                    "Assigned classes, schedules, and current enrollment counts.",
                     metrics,
                     "Assigned Subjects",
                     classTable.columns(),
                     classTable.rows(),
                     "Classroom Summary",
                     List.of(
-                            "Enrollment counts come from the enrollments table.",
-                            "Class rows are filtered by professor_id.",
-                            "Double-click a class row to inspect its values."
+                            "Use View Master List to inspect enrolled students for the selected class.",
+                            "Export Excel creates a grade-encoding template for the selected class.",
+                            "Import Excel validates component scores and computes term grades automatically."
                     )
             );
             case "Gradebook" -> new DashboardPageData(
                     "Gradebook",
-                    "Student grade entries under the current professor account.",
+                    "Computed grade entries under the current professor account.",
                     metrics,
                     "Encoded Grades",
                     gradebookTable.columns(),
                     gradebookTable.rows(),
                     "Gradebook Notes",
                     List.of(
-                            "Pending entries mean a grade row is still null or missing.",
-                            "Search supports student names, subjects, and grade values.",
-                            "Refresh after saving database changes in XAMPP."
+                            "Midterm and finals raw scores come from the saved component values.",
+                            "Equivalent grade uses the same transmutation logic shown on the student side.",
+                            "Manual Post Grade remains available as a fallback to Excel import."
                     )
             );
             case "Schedule" -> schedulePage(connection, roleSectionTitle(section), metrics, user, Role.PROFESSOR);
@@ -910,6 +1180,148 @@ public class SchoolRepository {
         );
     }
 
+    private List<StudentAcademicRow> loadStudentAcademicRows(Connection connection, User user) throws SQLException {
+        if (!tableExists(connection, "classes") || !tableExists(connection, "enrollments")) {
+            return List.of();
+        }
+
+        Integer studentId = resolveUserReferenceId(connection, Role.STUDENT, user);
+        if (studentId == null) {
+            return List.of();
+        }
+
+        String sql = """
+                SELECT e.enrollment_id, e.class_id, e.status,
+                       c.subject_id, c.professor_id, c.section_id, c.semester_id, c.school_year_id
+                FROM enrollments e
+                JOIN classes c ON e.class_id = c.class_id
+                WHERE e.student_id = ?
+                ORDER BY c.school_year_id DESC, c.semester_id DESC, c.class_id DESC
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, studentId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<StudentAcademicRow> rows = new ArrayList<>();
+                while (resultSet.next()) {
+                    Integer enrollmentId = integerValue(resultSet.getObject("enrollment_id"));
+                    Integer classId = integerValue(resultSet.getObject("class_id"));
+                    Integer subjectId = integerValue(resultSet.getObject("subject_id"));
+                    Integer professorId = integerValue(resultSet.getObject("professor_id"));
+                    Integer sectionId = integerValue(resultSet.getObject("section_id"));
+                    Integer semesterId = integerValue(resultSet.getObject("semester_id"));
+                    Integer schoolYearId = integerValue(resultSet.getObject("school_year_id"));
+                    GradeInput gradeInput = loadGradeInput(connection, enrollmentId);
+                    BigDecimal units = decimalValue(lookupColumnValue(connection, "subjects", "subject_id", subjectId, "units"));
+
+                    rows.add(new StudentAcademicRow(
+                            enrollmentId,
+                            classId,
+                            subjectId,
+                            safeString(resolveSubjectCode(connection, subjectId), "-"),
+                            resolveSubjectName(connection, subjectId),
+                            resolveSubjectDisplay(connection, subjectId),
+                            resolveEntityName(connection, professorId, "professors", "professor_id", "TBA"),
+                            units,
+                            safeString(resultSet.getString("status"), "enrolled"),
+                            buildClassScheduleSummary(connection, classId),
+                            resolveSectionName(connection, sectionId),
+                            semesterId,
+                            resolveSemesterName(connection, semesterId),
+                            schoolYearId,
+                            resolveSchoolYearName(connection, schoolYearId),
+                            gradeInput
+                    ));
+                }
+
+                if (rows.isEmpty()) {
+                    return rows;
+                }
+
+                StudentAcademicRow latestRow = rows.get(0);
+                if (latestRow.schoolYearId() == null || latestRow.semesterId() == null) {
+                    return rows;
+                }
+
+                return rows.stream()
+                        .filter(row -> latestRow.schoolYearId().equals(row.schoolYearId()) && latestRow.semesterId().equals(row.semesterId()))
+                        .toList();
+            }
+        }
+    }
+
+    private TableData studentSubjectStatusTable(List<StudentAcademicRow> academicRows) {
+        List<Object[]> rows = new ArrayList<>();
+        for (StudentAcademicRow row : academicRows) {
+            rows.add(new Object[]{
+                row.subjectDisplay(),
+                formatDecimal(row.units()),
+                row.professorName(),
+                row.sectionName(),
+                row.schedule(),
+                subjectProgressLabel(row)
+            });
+        }
+
+        return rows.isEmpty()
+                ? placeholder("Subject", "Units", "Professor", "Section", "Schedule", "Status")
+                : new TableData(new String[]{"Subject", "Units", "Professor", "Section", "Schedule", "Status"}, rows);
+    }
+
+    private TableData studentGradesTable(List<StudentAcademicRow> academicRows) {
+        List<Object[]> rows = new ArrayList<>();
+        for (StudentAcademicRow row : academicRows) {
+            rows.add(new Object[]{
+                row.subjectDisplay(),
+                formatDecimal(row.gradeInput().midtermRawScore()),
+                formatDecimal(row.gradeInput().finalsRawScore()),
+                formatDecimal(row.gradeInput().finalRawGrade()),
+                formatEquivalent(row.gradeInput().finalGrade()),
+                row.gradeInput().remarks()
+            });
+        }
+
+        return rows.isEmpty()
+                ? placeholder("Subject", "Midterm Raw", "Finals Raw", "Final Raw", "Equivalent", "Remarks")
+                : new TableData(new String[]{"Subject", "Midterm Raw", "Finals Raw", "Final Raw", "Equivalent", "Remarks"}, rows);
+    }
+
+    private TableData studentDocumentTable(List<StudentAcademicRow> academicRows) {
+        List<Object[]> rows = new ArrayList<>();
+        for (StudentAcademicRow row : academicRows) {
+            rows.add(new Object[]{
+                row.subjectCode(),
+                row.subjectName(),
+                formatDecimal(row.units()),
+                row.sectionName(),
+                row.professorName(),
+                row.schedule(),
+                row.semesterName(),
+                row.schoolYearName(),
+                row.status()
+            });
+        }
+
+        return rows.isEmpty()
+                ? placeholder("Subject Code", "Subject", "Units", "Section", "Professor", "Schedule", "Semester", "School Year", "Status")
+                : new TableData(
+                        new String[]{"Subject Code", "Subject", "Units", "Section", "Professor", "Schedule", "Semester", "School Year", "Status"},
+                        rows
+                );
+    }
+
+    private String currentAcademicContextLabel(List<StudentAcademicRow> academicRows) {
+        if (academicRows.isEmpty()) {
+            return "the current term";
+        }
+
+        StudentAcademicRow first = academicRows.get(0);
+        String semester = safeString(first.semesterName(), "");
+        String schoolYear = safeString(first.schoolYearName(), "");
+        String combined = (semester + " " + schoolYear).trim();
+        return combined.isBlank() ? "the current term" : combined;
+    }
+
     private TableData loadStudentSubjectRows(Connection connection, User user) throws SQLException {
         if (tableExists(connection, "classes") && tableExists(connection, "enrollments")) {
             Integer studentId = user.getStudentId();
@@ -953,15 +1365,16 @@ public class SchoolRepository {
 
     private TableData loadProfessorClasses(Connection connection, User user) throws SQLException {
         if (tableExists(connection, "classes")) {
-            Integer professorId = user.getProfessorId();
+            Integer professorId = resolveUserReferenceId(connection, Role.PROFESSOR, user);
             if (professorId != null) {
                 String sql = """
-                        SELECT c.class_id, c.subject_id, c.section_id, c.status, COUNT(e.enrollment_id) AS student_count
+                        SELECT c.class_id, c.subject_id, c.section_id, c.semester_id, c.school_year_id, c.status,
+                               COUNT(e.enrollment_id) AS student_count
                         FROM classes c
                         LEFT JOIN enrollments e ON c.class_id = e.class_id
                         WHERE c.professor_id = ?
-                        GROUP BY c.class_id, c.subject_id, c.section_id, c.status
-                        ORDER BY c.class_id DESC
+                        GROUP BY c.class_id, c.subject_id, c.section_id, c.semester_id, c.school_year_id, c.status
+                        ORDER BY c.school_year_id DESC, c.semester_id DESC, c.class_id DESC
                         """;
 
                 try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -969,17 +1382,24 @@ public class SchoolRepository {
                     try (ResultSet resultSet = statement.executeQuery()) {
                         List<Object[]> rows = new ArrayList<>();
                         while (resultSet.next()) {
+                            Integer classId = resultSet.getInt("class_id");
                             rows.add(new Object[]{
-                                resultSet.getInt("class_id"),
+                                classId,
                                 resolveSubjectDisplay(connection, integerValue(resultSet.getObject("subject_id"))),
                                 resolveSectionName(connection, integerValue(resultSet.getObject("section_id"))),
+                                resolveSemesterName(connection, integerValue(resultSet.getObject("semester_id"))),
+                                resolveSchoolYearName(connection, integerValue(resultSet.getObject("school_year_id"))),
                                 resultSet.getInt("student_count"),
+                                buildClassScheduleSummary(connection, classId),
                                 safeString(resultSet.getString("status"), "open")
                             });
                         }
 
                         if (!rows.isEmpty()) {
-                            return new TableData(new String[]{"Class Id", "Subject", "Section", "Students", "Status"}, rows);
+                            return new TableData(
+                                    new String[]{"Class Id", "Subject", "Section", "Semester", "School Year", "Students", "Schedule", "Status"},
+                                    rows
+                            );
                         }
                     }
                 } catch (SQLException ignored) {
@@ -993,10 +1413,10 @@ public class SchoolRepository {
 
     private TableData loadProfessorGradebook(Connection connection, User user) throws SQLException {
         if (tableExists(connection, "classes") && tableExists(connection, "enrollments")) {
-            Integer professorId = user.getProfessorId();
+            Integer professorId = resolveUserReferenceId(connection, Role.PROFESSOR, user);
             if (professorId != null) {
                 String sql = """
-                        SELECT e.enrollment_id, e.student_id, e.status, c.subject_id
+                        SELECT e.enrollment_id, e.student_id, e.status, c.class_id, c.subject_id
                         FROM classes c
                         JOIN enrollments e ON c.class_id = e.class_id
                         WHERE c.professor_id = ?
@@ -1014,20 +1434,22 @@ public class SchoolRepository {
 
                             rows.add(new Object[]{
                                 enrollmentId,
+                                integerValue(resultSet.getObject("class_id")),
                                 resolveSubjectDisplay(connection, integerValue(resultSet.getObject("subject_id"))),
                                 resolveEntityName(connection, studentId, "students", "student_id",
                                         safeString(resolveUsernameByStudentId(connection, studentId), "Unknown Student")),
-                                decimalOrDash(gradeInput.prelim()),
-                                decimalOrDash(gradeInput.midterm()),
-                                decimalOrDash(gradeInput.finals()),
-                                decimalOrDash(gradeInput.resolvedFinalGrade()),
+                                decimalOrDash(gradeInput.midtermRawScore()),
+                                decimalOrDash(gradeInput.finalsRawScore()),
+                                decimalOrDash(gradeInput.finalRawGrade()),
+                                formatEquivalent(gradeInput.finalGrade()),
+                                gradeInput.remarks(),
                                 safeString(resultSet.getString("status"), "enrolled")
                             });
                         }
 
                         if (!rows.isEmpty()) {
                             return new TableData(
-                                    new String[]{"Enrollment Id", "Subject", "Student", "Prelim", "Midterm", "Finals", "Final Grade", "Status"},
+                                    new String[]{"Enrollment Id", "Class Id", "Subject", "Student", "Midterm Raw", "Finals Raw", "Final Raw", "Equivalent", "Remarks", "Status"},
                                     rows
                             );
                         }
@@ -1041,37 +1463,45 @@ public class SchoolRepository {
         return legacyLoadProfessorGradebook(connection, user);
     }
 
-    private List<MetricCardData> studentMetrics(TableData subjectTable) {
-        int subjectCount = countMeaningfulRows(subjectTable);
-        int postedGrades = 0;
-        List<BigDecimal> numericGrades = new ArrayList<>();
+    private List<MetricCardData> studentMetrics(List<StudentAcademicRow> academicRows) {
+        BigDecimal enrolledUnits = BigDecimal.ZERO;
+        List<AcademicCalculator.WeightedGrade> gwaGrades = new ArrayList<>();
+        StudentAcademicRow bestRow = null;
+        StudentAcademicRow lowestRow = null;
 
-        for (Object[] row : subjectTable.rows()) {
-            if (row.length < 3) {
-                continue;
+        for (StudentAcademicRow row : academicRows) {
+            if (row.units() != null) {
+                enrolledUnits = enrolledUnits.add(row.units());
             }
 
-            String gradeValue = String.valueOf(row[2]);
-            if (!"Pending".equalsIgnoreCase(gradeValue) && !"-".equals(gradeValue)) {
-                postedGrades++;
-                BigDecimal parsed = tryParseDecimal(gradeValue);
-                if (parsed != null) {
-                    numericGrades.add(parsed);
-                }
+            BigDecimal equivalentGrade = row.gradeInput().finalGrade();
+            if (equivalentGrade != null && row.units() != null) {
+                gwaGrades.add(new AcademicCalculator.WeightedGrade(equivalentGrade, row.units()));
+            }
+
+            if (equivalentGrade != null && (bestRow == null || equivalentGrade.compareTo(bestRow.gradeInput().finalGrade()) < 0)) {
+                bestRow = row;
+            }
+            if (equivalentGrade != null && (lowestRow == null || equivalentGrade.compareTo(lowestRow.gradeInput().finalGrade()) > 0)) {
+                lowestRow = row;
             }
         }
 
-        String averageGrade = numericGrades.isEmpty()
-                ? "N/A"
-                : numericGrades.stream()
-                        .reduce(BigDecimal.ZERO, BigDecimal::add)
-                        .divide(BigDecimal.valueOf(numericGrades.size()), 2, RoundingMode.HALF_UP)
-                        .toPlainString();
+        BigDecimal gwa = AcademicCalculator.computeGwa(gwaGrades);
 
         return List.of(
-                new MetricCardData("Enrolled Subjects", String.valueOf(subjectCount), "Subjects linked to the logged-in account"),
-                new MetricCardData("Posted Grades", String.valueOf(postedGrades), "Grades already available in the database"),
-                new MetricCardData("Average Grade", averageGrade, "Calculated from numeric grade entries only")
+                new MetricCardData("Enrolled Units", formatDecimal(enrolledUnits), "Units based on active enrollments for the visible term"),
+                new MetricCardData("GWA This Semester", formatEquivalent(gwa), "Weighted average from posted equivalent grades only"),
+                new MetricCardData(
+                        "Highest Grade",
+                        bestRow == null ? "In Progress" : formatEquivalent(bestRow.gradeInput().finalGrade()),
+                        bestRow == null ? "No completed grades yet" : bestRow.subjectCode() + " | raw " + formatDecimal(bestRow.gradeInput().finalRawGrade())
+                ),
+                new MetricCardData(
+                        "Lowest Grade",
+                        lowestRow == null ? "In Progress" : formatEquivalent(lowestRow.gradeInput().finalGrade()),
+                        lowestRow == null ? "No completed grades yet" : lowestRow.subjectCode() + " | raw " + formatDecimal(lowestRow.gradeInput().finalRawGrade())
+                )
         );
     }
 
@@ -1079,10 +1509,14 @@ public class SchoolRepository {
         int classCount = countMeaningfulRows(classes);
         int learnerCount = 0;
         for (Object[] row : classes.rows()) {
-            for (Object value : row) {
-                if (value instanceof Number number) {
-                    learnerCount += number.intValue();
-                    break;
+            Object value = row.length > 5 ? row[5] : null;
+            if (value instanceof Number number) {
+                learnerCount += number.intValue();
+            } else if (value != null) {
+                try {
+                    learnerCount += Integer.parseInt(String.valueOf(value));
+                } catch (NumberFormatException ignored) {
+                    // Ignore malformed counts and keep the rest of the metric usable.
                 }
             }
         }
@@ -1209,60 +1643,7 @@ public class SchoolRepository {
     }
 
     private TableData loadStudentDocumentRows(Connection connection, User user) throws SQLException {
-        if (!tableExists(connection, "classes") || !tableExists(connection, "enrollments")) {
-            return placeholder("Subject Code", "Subject", "Units", "Section", "Professor", "Schedule", "Enrollment Status");
-        }
-
-        Integer studentId = user.getStudentId();
-        if (studentId == null) {
-            return placeholder("Subject Code", "Subject", "Units", "Section", "Professor", "Schedule", "Enrollment Status");
-        }
-
-        String sql = """
-                SELECT e.enrollment_id, e.class_id, e.status, c.subject_id, c.professor_id, c.section_id, c.semester_id, c.school_year_id
-                FROM enrollments e
-                JOIN classes c ON e.class_id = c.class_id
-                WHERE e.student_id = ?
-                ORDER BY c.class_id DESC
-                """;
-
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, studentId);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                List<Object[]> rows = new ArrayList<>();
-                while (resultSet.next()) {
-                    Integer classId = integerValue(resultSet.getObject("class_id"));
-                    Integer subjectId = integerValue(resultSet.getObject("subject_id"));
-                    Integer professorId = integerValue(resultSet.getObject("professor_id"));
-                    Integer sectionId = integerValue(resultSet.getObject("section_id"));
-                    Integer semesterId = integerValue(resultSet.getObject("semester_id"));
-                    Integer schoolYearId = integerValue(resultSet.getObject("school_year_id"));
-
-                    rows.add(new Object[]{
-                        safeString(resolveSubjectCode(connection, subjectId), "-"),
-                        resolveSubjectName(connection, subjectId),
-                        resolveSubjectUnits(connection, subjectId),
-                        resolveSectionName(connection, sectionId),
-                        resolveEntityName(connection, professorId, "professors", "professor_id", "TBA"),
-                        buildClassScheduleSummary(connection, classId),
-                        safeString(resultSet.getString("status"), "enrolled"),
-                        resolveSemesterName(connection, semesterId),
-                        resolveSchoolYearName(connection, schoolYearId)
-                    });
-                }
-
-                if (!rows.isEmpty()) {
-                    return new TableData(
-                            new String[]{"Subject Code", "Subject", "Units", "Section", "Professor", "Schedule", "Enrollment Status", "Semester", "School Year"},
-                            rows
-                    );
-                }
-            }
-        } catch (SQLException ignored) {
-            // Fall back to an empty placeholder below.
-        }
-
-        return placeholder("Subject Code", "Subject", "Units", "Section", "Professor", "Schedule", "Enrollment Status");
+        return studentDocumentTable(loadStudentAcademicRows(connection, user));
     }
 
     private TableData loadRegistrationRecords(Connection connection) throws SQLException {
@@ -1356,12 +1737,13 @@ public class SchoolRepository {
                     """);
             List<Object> parameters = new ArrayList<>();
 
-            if (role == Role.STUDENT && user != null && user.getStudentId() != null && tableExists(connection, "enrollments")) {
+            Integer resolvedReferenceId = user == null ? null : resolveUserReferenceId(connection, role, user);
+            if (role == Role.STUDENT && resolvedReferenceId != null && tableExists(connection, "enrollments")) {
                 sql.append(" JOIN enrollments e ON e.class_id = c.class_id WHERE e.student_id = ?");
-                parameters.add(user.getStudentId());
-            } else if (role == Role.PROFESSOR && user != null && user.getProfessorId() != null) {
+                parameters.add(resolvedReferenceId);
+            } else if (role == Role.PROFESSOR && resolvedReferenceId != null) {
                 sql.append(" WHERE c.professor_id = ?");
-                parameters.add(user.getProfessorId());
+                parameters.add(resolvedReferenceId);
             }
 
             sql.append(" ORDER BY cs.day_of_week, cs.start_time LIMIT 50");
@@ -1577,7 +1959,7 @@ public class SchoolRepository {
 
     private GradeInput loadGradeInput(Connection connection, Integer enrollmentId) throws SQLException {
         if (enrollmentId == null || !tableExists(connection, "grades")) {
-            return new GradeInput(null, null, null, null);
+            return new GradeInput(null, null, null, null, null, null, null, null, null, null, null, null);
         }
 
         String sql = "SELECT * FROM grades WHERE enrollment_id = ? LIMIT 1";
@@ -1585,21 +1967,27 @@ public class SchoolRepository {
             statement.setInt(1, enrollmentId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (!resultSet.next()) {
-                    return new GradeInput(null, null, null, null);
+                    return new GradeInput(null, null, null, null, null, null, null, null, null, null, null, null);
                 }
 
                 Set<String> columns = resultSetColumns(resultSet.getMetaData());
-                BigDecimal finalGrade = null;
-                if (columns.contains("final_grade")) {
-                    finalGrade = resultSet.getBigDecimal("final_grade");
-                } else if (columns.contains("grade_value")) {
-                    finalGrade = resultSet.getBigDecimal("grade_value");
-                }
+                BigDecimal midtermRawScore = firstDecimal(resultSet, columns, "midterm_raw_score", "midterm");
+                BigDecimal finalsRawScore = firstDecimal(resultSet, columns, "finals_raw_score", "finals");
+                BigDecimal finalRawGrade = firstDecimal(resultSet, columns, "final_raw_grade");
+                BigDecimal finalGrade = firstDecimal(resultSet, columns, "final_grade", "grade_value");
 
                 return new GradeInput(
-                        columns.contains("prelim") ? resultSet.getBigDecimal("prelim") : null,
-                        columns.contains("midterm") ? resultSet.getBigDecimal("midterm") : null,
-                        columns.contains("finals") ? resultSet.getBigDecimal("finals") : null,
+                        firstDecimal(resultSet, columns, "midterm_performance"),
+                        firstDecimal(resultSet, columns, "midterm_attendance"),
+                        firstDecimal(resultSet, columns, "midterm_written_works"),
+                        firstDecimal(resultSet, columns, "midterm_exam"),
+                        firstDecimal(resultSet, columns, "finals_performance"),
+                        firstDecimal(resultSet, columns, "finals_attendance"),
+                        firstDecimal(resultSet, columns, "finals_written_works"),
+                        firstDecimal(resultSet, columns, "finals_exam"),
+                        midtermRawScore,
+                        finalsRawScore,
+                        finalRawGrade,
                         finalGrade
                 );
             }
@@ -1607,12 +1995,56 @@ public class SchoolRepository {
     }
 
     private String resolveEnrollmentGrade(Connection connection, Integer enrollmentId) throws SQLException {
-        BigDecimal value = loadGradeInput(connection, enrollmentId).resolvedFinalGrade();
+        BigDecimal value = loadGradeInput(connection, enrollmentId).finalGrade();
         return value == null ? "Pending" : value.stripTrailingZeros().toPlainString();
     }
 
     private String decimalOrDash(BigDecimal value) {
         return value == null ? "-" : value.stripTrailingZeros().toPlainString();
+    }
+
+    private String formatDecimal(BigDecimal value) {
+        return value == null ? "Pending" : value.stripTrailingZeros().toPlainString();
+    }
+
+    private String formatEquivalent(BigDecimal value) {
+        return value == null ? "In Progress" : value.setScale(2, RoundingMode.HALF_UP).toPlainString();
+    }
+
+    private BigDecimal decimalValue(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof BigDecimal bigDecimal) {
+            return bigDecimal;
+        }
+        try {
+            return new BigDecimal(value.toString());
+        } catch (NumberFormatException exception) {
+            return null;
+        }
+    }
+
+    private BigDecimal firstDecimal(ResultSet resultSet, Set<String> columns, String... candidates) throws SQLException {
+        for (String candidate : candidates) {
+            if (candidate != null && columns.contains(candidate.toLowerCase(Locale.ROOT))) {
+                BigDecimal value = resultSet.getBigDecimal(candidate);
+                if (value != null) {
+                    return value.setScale(2, RoundingMode.HALF_UP);
+                }
+            }
+        }
+        return null;
+    }
+
+    private String subjectProgressLabel(StudentAcademicRow row) {
+        if (row.gradeInput().finalGrade() != null) {
+            return "Grade Posted";
+        }
+        if ("completed".equalsIgnoreCase(row.status())) {
+            return "Awaiting Grade";
+        }
+        return "In Progress";
     }
 
     private Object lookupColumnValue(Connection connection, String tableName, String idColumn, Object id, String... candidateColumns)
@@ -1700,6 +2132,26 @@ public class SchoolRepository {
         return "-";
     }
 
+    private String resolveStudentNumber(Connection connection, Integer studentId) throws SQLException {
+        Object value = lookupColumnValue(connection, "students", "student_id", studentId, "student_number", "student_no", "student_id_no");
+        return value == null ? null : value.toString();
+    }
+
+    private boolean professorOwnsClass(Connection connection, Integer professorId, Integer classId) throws SQLException {
+        if (professorId == null || classId == null || !tableExists(connection, "classes")) {
+            return false;
+        }
+
+        String sql = "SELECT 1 FROM classes WHERE class_id = ? AND professor_id = ? LIMIT 1";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, classId);
+            statement.setInt(2, professorId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next();
+            }
+        }
+    }
+
     private String buildClassScheduleSummary(Connection connection, Integer classId) throws SQLException {
         if (classId == null || !tableExists(connection, "class_schedules")) {
             return "-";
@@ -1732,6 +2184,223 @@ public class SchoolRepository {
         }
     }
 
+    private List<String> buildStudentCorLines(Connection connection, User user) throws SQLException {
+        List<StudentAcademicRow> academicRows = loadStudentAcademicRows(connection, user);
+        Integer studentId = resolveUserReferenceId(connection, Role.STUDENT, user);
+        BigDecimal totalUnits = academicRows.stream()
+                .map(StudentAcademicRow::units)
+                .filter(java.util.Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        int reportWidth = 92;
+        String studentNumber = pdfValue(safeString(resolveStudentNumber(connection, studentId), safeString(user.getUsername(), "--")));
+        String program = pdfValue(resolveStudentCourseName(connection, studentId));
+        String college = pdfValue(resolveStudentCollegeName(connection, studentId));
+        String yearLevel = pdfValue(resolveStudentYearLevelLabel(connection, studentId));
+        String section = pdfValue(resolveStudentSectionForPdf(connection, studentId, academicRows));
+        String academicTerm = pdfValue(currentAcademicContextLabel(academicRows));
+        String totalSubjects = String.valueOf(academicRows.size());
+
+        List<String> lines = new ArrayList<>();
+        lines.add(centerTextLine("BULACAN STATE UNIVERSITY", reportWidth));
+        lines.add(centerTextLine("Republic of the Philippines", reportWidth));
+        lines.add(centerTextLine("City of Malolos, Bulacan", reportWidth));
+        lines.add("");
+        lines.add(centerTextLine("CERTIFICATE OF REGISTRATION / ADVISING SLIP", reportWidth));
+        lines.add(pdfDivider(reportWidth));
+        lines.add(pdfPairLine("Full Name", pdfValue(user.getDisplayName()), "Student No.", studentNumber));
+        lines.add(pdfPairLine("Program", program, "Year Level", yearLevel));
+        lines.add(pdfPairLine("College", college, "Section", section));
+        lines.add(pdfPairLine("Term", academicTerm, "Subjects", totalSubjects));
+        lines.add(pdfPairLine("Total Units", pdfDecimal(totalUnits), "Status", academicRows.isEmpty() ? "No linked data" : "Officially enrolled"));
+        lines.add(pdfDivider(reportWidth));
+        lines.addAll(tableLines(
+                List.of("Code", "Subject", "Units", "Section", "Schedule", "Status"),
+                academicRows.stream().map(row -> List.of(
+                        pdfValue(row.subjectCode()),
+                        pdfValue(row.subjectName()),
+                        pdfDecimal(row.units()),
+                        pdfValue(row.sectionName()),
+                        pdfValue(row.schedule()),
+                        pdfValue(row.status())
+                )).toList(),
+                new int[]{8, 18, 5, 8, 28, 10}
+        ));
+        lines.add(pdfDivider(reportWidth));
+        lines.add("Date Printed: " + LocalDate.now().format(DateTimeFormatter.ofPattern("MM/dd/yyyy")));
+        lines.add("Generated from live enrollment, class schedule, and subject records.");
+        return lines;
+    }
+
+    private List<String> buildStudentGradeReportLines(Connection connection, User user) throws SQLException {
+        List<StudentAcademicRow> academicRows = loadStudentAcademicRows(connection, user);
+        Integer studentId = resolveUserReferenceId(connection, Role.STUDENT, user);
+        BigDecimal totalUnits = academicRows.stream()
+                .map(StudentAcademicRow::units)
+                .filter(java.util.Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        List<AcademicCalculator.WeightedGrade> gwaGrades = new ArrayList<>();
+        for (StudentAcademicRow row : academicRows) {
+            if (row.gradeInput().finalGrade() != null && row.units() != null) {
+                gwaGrades.add(new AcademicCalculator.WeightedGrade(row.gradeInput().finalGrade(), row.units()));
+            }
+        }
+
+        BigDecimal gwa = AcademicCalculator.computeGwa(gwaGrades);
+        int reportWidth = 92;
+        long postedGrades = academicRows.stream().filter(row -> row.gradeInput().finalGrade() != null).count();
+        String studentNumber = pdfValue(safeString(resolveStudentNumber(connection, studentId), safeString(user.getUsername(), "--")));
+        String program = pdfValue(resolveStudentCourseName(connection, studentId));
+        String college = pdfValue(resolveStudentCollegeName(connection, studentId));
+        String yearLevel = pdfValue(resolveStudentYearLevelLabel(connection, studentId));
+        String section = pdfValue(resolveStudentSectionForPdf(connection, studentId, academicRows));
+        String academicTerm = pdfValue(currentAcademicContextLabel(academicRows));
+
+        List<String> lines = new ArrayList<>();
+        lines.add(centerTextLine("BULACAN STATE UNIVERSITY", reportWidth));
+        lines.add(centerTextLine("Republic of the Philippines", reportWidth));
+        lines.add(centerTextLine("City of Malolos, Bulacan", reportWidth));
+        lines.add("");
+        lines.add(centerTextLine("REPORT OF GRADES", reportWidth));
+        lines.add(pdfDivider(reportWidth));
+        lines.add(pdfPairLine("Full Name", pdfValue(user.getDisplayName()), "Student No.", studentNumber));
+        lines.add(pdfPairLine("Program", program, "Year Level", yearLevel));
+        lines.add(pdfPairLine("College", college, "Section", section));
+        lines.add(pdfPairLine("Term", academicTerm, "Courses", String.valueOf(academicRows.size())));
+        lines.add(pdfPairLine("Credit Units", pdfDecimal(totalUnits), "GWA", pdfEquivalent(gwa)));
+        lines.add(pdfDivider(reportWidth));
+        lines.addAll(tableLines(
+                List.of("Code", "Subject", "Units", "Midterm", "Finals", "Final Raw", "Eqv", "Remarks"),
+                academicRows.stream().map(row -> List.of(
+                        pdfValue(row.subjectCode()),
+                        pdfValue(row.subjectName()),
+                        pdfDecimal(row.units()),
+                        pdfDecimal(row.gradeInput().midtermRawScore()),
+                        pdfDecimal(row.gradeInput().finalsRawScore()),
+                        pdfDecimal(row.gradeInput().finalRawGrade()),
+                        pdfEquivalent(row.gradeInput().finalGrade()),
+                        pdfValue(row.gradeInput().remarks())
+                )).toList(),
+                new int[]{8, 20, 5, 7, 7, 7, 7, 10}
+        ));
+        lines.add(pdfDivider(reportWidth));
+        lines.add(pdfPairLine("Posted Grades", String.valueOf(postedGrades), "Pending", String.valueOf(Math.max(0, academicRows.size() - postedGrades))));
+        lines.add("Equivalent grades use the BulSU transmutation configured in the system.");
+        lines.add("Date Printed: " + LocalDate.now().format(DateTimeFormatter.ofPattern("MM/dd/yyyy")));
+        return lines;
+    }
+
+    private String resolveStudentCollegeName(Connection connection, Integer studentId) throws SQLException {
+        Integer courseId = integerValue(lookupColumnValue(connection, "students", "student_id", studentId, "course_id"));
+        Integer departmentId = integerValue(lookupColumnValue(connection, "courses", "course_id", courseId, "department_id"));
+        return resolveDepartmentName(connection, departmentId);
+    }
+
+    private String resolveStudentYearLevelLabel(Connection connection, Integer studentId) throws SQLException {
+        Integer yearLevel = integerValue(lookupColumnValue(connection, "students", "student_id", studentId, "current_year_level", "year_level"));
+        if (yearLevel == null || yearLevel <= 0) {
+            return "--";
+        }
+        return switch (yearLevel) {
+            case 1 -> "1st Year";
+            case 2 -> "2nd Year";
+            case 3 -> "3rd Year";
+            case 4 -> "4th Year";
+            default -> yearLevel + "th Year";
+        };
+    }
+
+    private String resolveStudentSectionForPdf(Connection connection, Integer studentId, List<StudentAcademicRow> academicRows) throws SQLException {
+        if (academicRows != null && !academicRows.isEmpty()) {
+            return safeString(academicRows.get(0).sectionName(), "--");
+        }
+        Integer sectionId = integerValue(lookupColumnValue(connection, "students", "student_id", studentId, "section_id"));
+        return resolveSectionName(connection, sectionId);
+    }
+
+    private String centerTextLine(String value, int width) {
+        String text = trimToWidth(pdfValue(value), width);
+        int leftPadding = Math.max(0, (width - text.length()) / 2);
+        return " ".repeat(leftPadding) + text;
+    }
+
+    private String pdfDivider(int width) {
+        return "-".repeat(Math.max(1, width));
+    }
+
+    private String pdfPairLine(String leftLabel, String leftValue, String rightLabel, String rightValue) {
+        return padRight(trimToWidth(pdfValue(leftLabel).toUpperCase(Locale.ROOT), 12), 12)
+                + ": "
+                + padRight(trimToWidth(pdfValue(leftValue), 26), 26)
+                + "    "
+                + padRight(trimToWidth(pdfValue(rightLabel).toUpperCase(Locale.ROOT), 12), 12)
+                + ": "
+                + trimToWidth(pdfValue(rightValue), 30);
+    }
+
+    private String pdfValue(String value) {
+        if (value == null || value.isBlank() || "the current term".equalsIgnoreCase(value)) {
+            return "--";
+        }
+        return value.replace('\n', ' ').replace('\r', ' ').replaceAll("\\s+", " ").trim();
+    }
+
+    private String pdfDecimal(BigDecimal value) {
+        return value == null ? "--" : value.stripTrailingZeros().toPlainString();
+    }
+
+    private String pdfEquivalent(BigDecimal value) {
+        return value == null ? "--" : value.setScale(2, RoundingMode.HALF_UP).toPlainString();
+    }
+
+    private List<String> tableLines(List<String> headers, List<List<String>> rows, int[] widths) {
+        List<String> lines = new ArrayList<>();
+        lines.add(fixedWidthRow(headers, widths));
+        lines.add(repeat("-", widths));
+        for (List<String> row : rows) {
+            lines.add(fixedWidthRow(row, widths));
+        }
+        if (rows.isEmpty()) {
+            lines.add("No data available");
+        }
+        return lines;
+    }
+
+    private String fixedWidthRow(List<String> values, int[] widths) {
+        StringBuilder builder = new StringBuilder();
+        for (int index = 0; index < widths.length; index++) {
+            String value = index < values.size() ? safeString(values.get(index), "") : "";
+            if (builder.length() > 0) {
+                builder.append(" | ");
+            }
+            builder.append(padRight(trimToWidth(value, widths[index]), widths[index]));
+        }
+        return builder.toString();
+    }
+
+    private String repeat(String value, int[] widths) {
+        int totalWidth = 0;
+        for (int width : widths) {
+            totalWidth += width;
+        }
+        totalWidth += Math.max(0, widths.length - 1) * 3;
+        return value.repeat(Math.max(1, totalWidth));
+    }
+
+    private String trimToWidth(String value, int width) {
+        if (value == null) {
+            return "";
+        }
+        return value.length() <= width ? value : value.substring(0, Math.max(0, width - 3)) + "...";
+    }
+
+    private String padRight(String value, int width) {
+        StringBuilder builder = new StringBuilder(value == null ? "" : value);
+        while (builder.length() < width) {
+            builder.append(' ');
+        }
+        return builder.toString();
+    }
+
     private String escapeHtml(String value) {
         return value
                 .replace("&", "&amp;")
@@ -1757,16 +2426,22 @@ public class SchoolRepository {
     }
 
     private List<String> buildStudentNotes(Connection connection, User user) throws SQLException {
+        return buildStudentNotes(connection, user, loadStudentAcademicRows(connection, user));
+    }
+
+    private List<String> buildStudentNotes(Connection connection, User user, List<StudentAcademicRow> academicRows) throws SQLException {
         List<String> notes = new ArrayList<>();
         notes.add("Logged in as " + user.getDisplayName() + ".");
-        notes.add("Use the navigation buttons on the left to switch pages.");
+        notes.add("Current academic view: " + currentAcademicContextLabel(academicRows) + ".");
         notes.add("Search filters the visible table instantly while you type.");
 
-        String scheduleTable = firstExistingTable(connection, "class_schedules", "schedules", "schedule");
-        if (scheduleTable == null) {
-            notes.add("No dedicated schedule table was detected yet in the database.");
+        long postedGrades = academicRows.stream().filter(row -> row.gradeInput().finalGrade() != null).count();
+        if (academicRows.isEmpty()) {
+            notes.add("No linked enrollment records were found for this student account.");
+        } else if (postedGrades == 0) {
+            notes.add("Subjects are loaded, but the semester grade entries are still in progress.");
         } else {
-            notes.add("Schedule data source detected: " + scheduleTable + ".");
+            notes.add(postedGrades + " subject(s) already have posted equivalent grades.");
         }
 
         return notes;
@@ -1902,6 +2577,59 @@ public class SchoolRepository {
             }
         }
     }
+
+    private Integer resolveStudentIdFromProfile(Connection connection, User user) throws SQLException {
+        if (!tableExists(connection, "students")) {
+            return null;
+        }
+
+        String sql = """
+                SELECT student_id
+                FROM students
+                WHERE email = ?
+                   OR student_number = ?
+                   OR full_name = ?
+                LIMIT 1
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, user.getEmail());
+            statement.setString(2, user.getUsername());
+            statement.setString(3, user.getDisplayName());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next() ? integerValue(resultSet.getObject("student_id")) : null;
+            }
+        }
+    }
+
+    private Integer resolveProfessorIdFromProfile(Connection connection, User user) throws SQLException {
+        return resolveProfileId(connection, "professors", "professor_id", user);
+    }
+
+    private Integer resolveStaffIdFromProfile(Connection connection, User user) throws SQLException {
+        String table = firstExistingTable(connection, "staffs", "staff");
+        return resolveProfileId(connection, table, "staff_id", user);
+    }
+
+    private Integer resolveAdminIdFromProfile(Connection connection, User user) throws SQLException {
+        String table = firstExistingTable(connection, "admins", "admin");
+        return resolveProfileId(connection, table, "admin_id", user);
+    }
+
+    private Integer resolveProfileId(Connection connection, String table, String idColumn, User user) throws SQLException {
+        if (table == null || !tableExists(connection, table)) {
+            return null;
+        }
+
+        String sql = "SELECT " + idColumn + " FROM " + table + " WHERE email = ? OR full_name = ? LIMIT 1";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, user.getEmail());
+            statement.setString(2, user.getDisplayName());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next() ? integerValue(resultSet.getObject(idColumn)) : null;
+            }
+        }
+    }
+
     private TableData resultSetTable(ResultSet resultSet, Set<String> excludedColumns) throws SQLException {
         ResultSetMetaData metaData = resultSet.getMetaData();
         List<Integer> includedIndexes = new ArrayList<>();
@@ -2075,6 +2803,40 @@ public class SchoolRepository {
         };
     }
 
+    private Integer resolveUserReferenceId(Connection connection, Role role, User user) throws SQLException {
+        Integer directReference = referenceId(role, user);
+        if (directReference != null) {
+            return directReference;
+        }
+
+        if (tableExists(connection, "users")) {
+            String roleColumn = linkedIdColumn(role);
+            String byUserIdSql = "SELECT " + roleColumn + " FROM users WHERE user_id = ? LIMIT 1";
+            if (user.getUserId() > 0) {
+                try (PreparedStatement statement = connection.prepareStatement(byUserIdSql)) {
+                    statement.setInt(1, user.getUserId());
+                    try (ResultSet resultSet = statement.executeQuery()) {
+                        if (resultSet.next()) {
+                            Integer value = integerValue(resultSet.getObject(1));
+                            if (value != null) {
+                                return value;
+                            }
+                        }
+                    }
+                } catch (SQLException ignored) {
+                    // Fall back to username/email matching below.
+                }
+            }
+        }
+
+        return switch (role) {
+            case STUDENT -> resolveStudentIdFromProfile(connection, user);
+            case PROFESSOR -> resolveProfessorIdFromProfile(connection, user);
+            case STAFF -> resolveStaffIdFromProfile(connection, user);
+            case ADMIN -> resolveAdminIdFromProfile(connection, user);
+        };
+    }
+
     private String firstExistingTable(Connection connection, String... candidates) throws SQLException {
         Set<String> availableTables = availableTables(connection);
         for (String candidate : candidates) {
@@ -2178,6 +2940,10 @@ public class SchoolRepository {
         return value == null || value.isBlank() ? fallback : value;
     }
 
+    private String nullToEmpty(BigDecimal value) {
+        return value == null ? "" : value.stripTrailingZeros().toPlainString();
+    }
+
     private Integer integerValue(Object value) {
         if (value == null) {
             return null;
@@ -2237,6 +3003,26 @@ public class SchoolRepository {
         return tableData.rows().size();
     }
 
-    private record TableData(String[] columns, List<Object[]> rows) {
+    public record TableData(String[] columns, List<Object[]> rows) {
+    }
+
+    private record StudentAcademicRow(
+            Integer enrollmentId,
+            Integer classId,
+            Integer subjectId,
+            String subjectCode,
+            String subjectName,
+            String subjectDisplay,
+            String professorName,
+            BigDecimal units,
+            String status,
+            String schedule,
+            String sectionName,
+            Integer semesterId,
+            String semesterName,
+            Integer schoolYearId,
+            String schoolYearName,
+            GradeInput gradeInput
+    ) {
     }
 }

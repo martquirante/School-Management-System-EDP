@@ -2,9 +2,8 @@ package com.mycompany.schoolmanagementssytem_edp;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
-import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.Insets;
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import javax.swing.BorderFactory;
@@ -16,7 +15,7 @@ import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 
-public class Admin extends JFrame {
+public class Admin extends JFrame implements ThemeRefreshable {
 
     public Admin() {
         super("BulSU School Management System");
@@ -24,18 +23,21 @@ public class Admin extends JFrame {
     }
 
     private void buildUi() {
+        getContentPane().removeAll();
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setMinimumSize(new Dimension(1100, 700));
-        setSize(1280, 820);
-        setLocationRelativeTo(null);
+        if (getWidth() <= 1 || getHeight() <= 1) {
+            setSize(1280, 820);
+            setLocationRelativeTo(null);
+        }
 
         JPanel root = AppChrome.createRootFrame(this);
         setContentPane(root);
 
         root.add(
                 AppChrome.createBrandHeader(
-                        "Smart campus access for students, faculty, staff, and administrators",
-                        () -> AppNavigator.openLanding(this)
+                        "Academic records, class management, and student services in one BulSU portal",
+                        () -> AppNavigator.refreshCurrentFrame(this)
                 ),
                 BorderLayout.NORTH
         );
@@ -45,69 +47,62 @@ public class Admin extends JFrame {
         root.add(center, BorderLayout.CENTER);
 
         JPanel heroCard = AppTheme.createCardPanel();
-        heroCard.setLayout(new GridBagLayout());
-        heroCard.setPreferredSize(new Dimension(820, 470));
+        heroCard.setLayout(new BorderLayout(0, 24));
+        heroCard.setPreferredSize(new Dimension(920, 560));
+        heroCard.setBackground(AppTheme.PRIMARY_ACTIVE);
         heroCard.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(AppTheme.BORDER, 1),
-                new EmptyBorder(48, 50, 48, 50)
+                BorderFactory.createLineBorder(AppTheme.PRIMARY_HOVER, 1),
+                new EmptyBorder(42, 44, 42, 44)
         ));
 
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.insets = new Insets(0, 0, 12, 0);
-        gbc.anchor = GridBagConstraints.CENTER;
+        JPanel heroTop = new JPanel(new BorderLayout(0, 14));
+        heroTop.setOpaque(false);
+        JLabel badgeLabel = new JLabel("Welcome to");
+        badgeLabel.setFont(AppTheme.bodyFont(28));
+        badgeLabel.setForeground(java.awt.Color.WHITE);
+        heroTop.add(badgeLabel, BorderLayout.NORTH);
 
-        JLabel badgeLabel = new JLabel("BulSU Sarmiento Campus Digital Portal");
-        badgeLabel.setFont(AppTheme.bodyBoldFont(14));
-        badgeLabel.setOpaque(true);
-        badgeLabel.setBackground(AppTheme.PRIMARY_SOFT);
-        badgeLabel.setForeground(AppTheme.PRIMARY_ACTIVE);
-        badgeLabel.setBorder(new EmptyBorder(10, 16, 10, 16));
-        heroCard.add(badgeLabel, gbc);
+        JPanel titlePanel = new JPanel(new BorderLayout(0, 8));
+        titlePanel.setOpaque(false);
+        JLabel titleLabel = new JLabel("Bulacan State University");
+        titleLabel.setFont(AppTheme.displayFont(58));
+        titleLabel.setForeground(java.awt.Color.WHITE);
+        titlePanel.add(titleLabel, BorderLayout.NORTH);
 
-        gbc.gridy++;
-        gbc.insets = new Insets(18, 0, 10, 0);
-        JLabel subtitleLabel = new JLabel("Welcome to the");
-        subtitleLabel.setFont(AppTheme.bodyFont(24));
-        subtitleLabel.setForeground(AppTheme.TEXT_MUTED);
-        heroCard.add(subtitleLabel, gbc);
-
-        gbc.gridy++;
-        gbc.insets = new Insets(0, 0, 26, 0);
-        JLabel titleLabel = new JLabel("School Management System");
-        titleLabel.setFont(AppTheme.displayFont(44));
-        titleLabel.setForeground(AppTheme.TEXT_PRIMARY);
-        heroCard.add(titleLabel, gbc);
-
-        gbc.gridy++;
-        gbc.insets = new Insets(0, 0, 18, 0);
         JLabel descriptionLabel = new JLabel(
-                "<html><div style='text-align:center;'>"
-                + "Code-first Java Swing screens, role-based logins, and database-driven dashboards "
-                + "for Admin, Student, Professor, and Staff."
+                "<html><div style='width:760px;'>"
+                + "Academic records, class management, grading, and student services in one presentation-ready BulSU portal."
                 + "</div></html>"
         );
-        descriptionLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        descriptionLabel.setFont(AppTheme.bodyFont(17));
-        descriptionLabel.setForeground(AppTheme.TEXT_SECONDARY);
-        heroCard.add(descriptionLabel, gbc);
+        descriptionLabel.setFont(AppTheme.bodyFont(18));
+        descriptionLabel.setForeground(new java.awt.Color(236, 244, 255));
+        titlePanel.add(descriptionLabel, BorderLayout.SOUTH);
+        heroTop.add(titlePanel, BorderLayout.CENTER);
+        heroCard.add(heroTop, BorderLayout.NORTH);
 
-        gbc.gridy++;
-        gbc.insets = new Insets(12, 0, 0, 0);
-        JButton startButton = new JButton("Let's Get Started");
+        JPanel statementsPanel = new JPanel(new GridLayout(1, 2, 18, 0));
+        statementsPanel.setOpaque(false);
+        statementsPanel.add(createStatementBlock(
+                "Vision",
+                "Bulacan State University is a progressive knowledge-generating institution globally recognized for excellent instruction, pioneering research, and responsive extension services."
+        ));
+        statementsPanel.add(createStatementBlock(
+                "Mission",
+                "Bulacan State University exists to produce highly competent, ethical, and service-oriented professionals through quality and inclusive education, relevant innovation, and community engagement."
+        ));
+        heroCard.add(statementsPanel, BorderLayout.CENTER);
+
+        JPanel heroBottom = new JPanel(new BorderLayout(0, 12));
+        heroBottom.setOpaque(false);
+        JButton startButton = new JButton("Open the Portal");
         startButton.setPreferredSize(new Dimension(260, 52));
-        AppTheme.stylePrimaryButton(startButton);
+        AppTheme.styleSecondaryButton(startButton);
+        startButton.setBackground(java.awt.Color.WHITE);
+        startButton.setForeground(AppTheme.PRIMARY_ACTIVE);
         startButton.addActionListener(this::openRoleSelection);
         startButton.addMouseListener(AppTheme.clickPulse(startButton));
-        heroCard.add(startButton, gbc);
-
-        gbc.gridy++;
-        gbc.insets = new Insets(18, 0, 0, 0);
-        JLabel footerNote = new JLabel("Responsive Java Swing UI with XAMPP/MySQL-powered role dashboards.");
-        footerNote.setFont(AppTheme.bodyFont(14));
-        footerNote.setForeground(AppTheme.TEXT_MUTED);
-        heroCard.add(footerNote, gbc);
+        heroBottom.add(startButton, BorderLayout.WEST);
+        heroCard.add(heroBottom, BorderLayout.SOUTH);
 
         center.add(heroCard);
         getRootPane().setDefaultButton(startButton);
@@ -116,9 +111,34 @@ public class Admin extends JFrame {
                 KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0),
                 JPanel.WHEN_IN_FOCUSED_WINDOW
         );
+        revalidate();
+        repaint();
+    }
+
+    private JPanel createStatementBlock(String title, String body) {
+        JPanel card = new JPanel(new BorderLayout(0, 14));
+        card.setOpaque(false);
+        card.setBorder(new EmptyBorder(8, 0, 8, 0));
+
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setFont(AppTheme.headingFont(26));
+        titleLabel.setForeground(java.awt.Color.WHITE);
+        card.add(titleLabel, BorderLayout.NORTH);
+
+        JLabel bodyLabel = new JLabel("<html><div style='width:320px;'>" + body + "</div></html>");
+        bodyLabel.setFont(AppTheme.bodyFont(16));
+        bodyLabel.setForeground(new java.awt.Color(236, 244, 255));
+        bodyLabel.setVerticalAlignment(SwingConstants.TOP);
+        card.add(bodyLabel, BorderLayout.CENTER);
+        return card;
     }
 
     private void openRoleSelection(ActionEvent event) {
         AppNavigator.openRoleSelection(this);
+    }
+
+    @Override
+    public void refreshTheme() {
+        AppTheme.refreshFrame(this, this::buildUi);
     }
 }
